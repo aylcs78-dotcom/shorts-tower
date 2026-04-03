@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.7.1</title>
+<title>Shorts 관제탑 v11.7.2</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -507,7 +507,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.7.1</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.7.2</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -1808,23 +1808,28 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     }catch(e){setAutoPhase("에러");setAutoError("대본 실패: "+e.message)}
   };
 
-  // ★ v11.5.5: 이미지 생성 — 채널B 전용 (채널A는 Storybook 📁 업로드)
+  // ★ v11.7.2: 이미지 생성 — 순차 + 기존 성공분 스킵 (GAS 동시요청 병목 해결)
   const runImages=async()=>{
     if(!script)return;
     if(isA){showToast("채널A는 📁 이미지 업로드를 사용하세요");return}
     setAutoError("");
     const count=SCENE_COUNT_B;
     const ar="9:16";
-    const imgUrls=Array(count).fill(null);
-    setAutoPhase("이미지 "+count+"장 동시 생성 중...");
-    const results=await Promise.allSettled(
-      Array.from({length:count},(_,i)=>i).map(async i=>{
+    const imgUrls=[...images];
+    const failures=[];
+    for(let i=0;i<count;i++){
+      if(imgUrls[i]){console.log("⏭️ IMG"+(i+1)+" 이미 완료, 건너뜀");continue}
+      setAutoPhase("이미지 "+(i+1)+"/"+count+" 생성 중...");
+      try{
         imgUrls[i]=await _generateImageNB2(script["img"+(i+1)],ar);
-      })
-    );
-    setImages([...imgUrls]);
-    const fails=results.map((r,i)=>r.status==="rejected"?(i+1):null).filter(Boolean);
-    if(fails.length>0){setAutoPhase("에러");setAutoError("이미지 "+fails.join(",")+" 실패 — 개별 재생성으로 복구");return}
+        setImages([...imgUrls]);
+      }catch(e){
+        failures.push(i+1);
+        console.log("❌ IMG"+(i+1)+" 실패: "+e.message);
+        imgUrls[i]=null;setImages([...imgUrls]);
+      }
+    }
+    if(failures.length>0){setAutoPhase("에러");setAutoError("이미지 "+failures.join(",")+" 실패 — 🔄로 개별 재생성");return}
     setStep(3);setAutoPhase("이미지완료");
   };
 
@@ -2067,7 +2072,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
                     )}
                     <div className="img-btns">
                       {script&&script["img"+(i+1)]&&<button onClick={()=>{cp(script["img"+(i+1)]);showToast("IMG"+(i+1)+" 프롬프트 복사")}}>📋</button>}
-                      {images[i]&&!isRunning&&<button onClick={()=>regenSingleImage(i)} title={"IMG"+(i+1)+" 재생성"}>🔄</button>}
+                      {script&&script["img"+(i+1)]&&!isRunning&&<button onClick={()=>regenSingleImage(i)} title={"IMG"+(i+1)+" 재생성"}>🔄</button>}
                       {!isA&&videoUrls[i]&&!isRunning&&<button onClick={()=>regenSingleVideo(i)} title={"VID"+(i+1)+" 재생성"}>🎬</button>}
                     </div>
                   </div>
