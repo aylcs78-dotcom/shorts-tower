@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.6.0</title>
+<title>Shorts 관제탑 v11.7.0</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -95,26 +95,7 @@ textarea,input{font-family:inherit}
 .ap-status.error{color:#ef4444}
 .manual-toggle{background:none;border:none;color:#444;font-size:11px;padding:8px 0;width:100%;text-align:center;margin-top:4px}
 .manual-toggle:hover{color:#666}
-/* Scouting */
-.scout-section{background:#0d0d14;border:1px solid #1a1a28;border-radius:10px;padding:12px;margin-bottom:12px}
-.scout-result{background:#08080c;border:1px solid #1a1a28;border-radius:8px;padding:10px;font-size:11px;color:#999;line-height:1.6;white-space:pre-wrap;max-height:160px;overflow:auto;margin-top:6px}
-.sc-pad{padding:14px 16px}
-.sc-step-bar{display:flex;gap:6px;margin-bottom:16px}
-.sc-step-pill{flex:1;text-align:center;padding:10px 0;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;border:1px solid #1a1a28;background:#0a0a10;color:#444}
-.sc-step-pill.active{border-color:#ff4444;background:#ff444412;color:#ff6b6b}
-.sc-step-pill.done{border-color:#4ade8044;background:#4ade8008;color:#4ade80}
-.sc-card{background:#111118;border:1px solid #1a1a28;border-radius:12px;padding:16px;margin-bottom:12px}
-.sc-label{font-size:11px;font-weight:600;color:#666;margin-bottom:6px;display:block}
-.sc-textarea{width:100%;padding:12px;background:#08080c;border:1px solid #1a1a28;border-radius:8px;color:#ccc;font-size:12px;font-family:inherit;resize:vertical;line-height:1.6}
-.sc-textarea::placeholder{color:#333}
-.sc-textarea:focus{border-color:#333;outline:none}
-.sc-link{display:inline-flex;align-items:center;gap:4px;padding:8px 14px;background:#ffffff06;border:1px solid #1a1a28;border-radius:8px;color:#888;font-size:11px;text-decoration:none;font-weight:600;transition:all 0.15s}
-.sc-link:hover{border-color:#333;color:#ccc;background:#ffffff0a}
-.sc-prompt-box{background:#08080c;border:1px solid #1a1a28;border-radius:8px;padding:14px;font-size:11px;color:#888;line-height:1.7;white-space:pre-wrap;max-height:280px;overflow:auto;margin-bottom:10px}
-.sc-hist{background:#0a0a10;border:1px solid #1a1a28;border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s}
-.sc-hist:hover{border-color:#333}
-.sc-divider{height:1px;background:#1a1a28;margin:16px 0}
-/* Video status badge */
+/* Desktop */
 .vid-badge{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600;position:absolute;top:4px;left:4px}
 .vid-badge.pending{background:#eab30833;color:#eab308}
 .vid-badge.done{background:#4ade8033;color:#4ade80}
@@ -126,12 +107,9 @@ body{max-width:none;padding-bottom:0}
 .hdr{max-width:none;padding:16px 32px 12px}
 .hdr-title{font-size:22px}
 .hdr-logo{letter-spacing:5px}
-.desk-layout{display:grid;grid-template-columns:1fr 300px;gap:0;max-width:1400px;margin:0 auto}
-.desk-main{border-right:1px solid #1a1a28;min-height:calc(100vh - 60px)}
+.desk-layout{display:grid;grid-template-columns:1fr;gap:0;max-width:900px;margin:0 auto}
+.desk-main{min-height:calc(100vh - 60px)}
 .desk-main .pad{padding:20px 28px;max-width:none}
-.desk-side{padding:20px;background:#0a0a10;min-height:calc(100vh - 60px);overflow-y:auto}
-.desk-side .pad{padding:0}
-.desk-side .box{background:#111118}
 .desk-main .slot-bar{gap:10px}
 .desk-main .slot-btn{padding:12px 0;font-size:14px}
 .desk-main .topic-cards-row{display:grid;grid-template-columns:1fr;gap:10px}
@@ -144,11 +122,6 @@ body{max-width:none;padding-bottom:0}
 .desk-cfg-panel{position:fixed;top:0;right:0;width:400px;height:100vh;background:#0a0a10;border-left:1px solid #1a1a28;z-index:150;overflow-y:auto;padding:20px;animation:slideIn 0.2s ease}
 .desk-cfg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:140}
 @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
-.desk-side-title{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:16px}
-.desk-conn{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.desk-conn-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-.desk-conn-dot.on{background:#4ade80;box-shadow:0 0 6px #4ade8066}
-.desk-conn-dot.off{background:#ff4444;box-shadow:0 0 6px #ff444466}
 }
 </style>
 </head>
@@ -498,7 +471,6 @@ function App(){
   const[isDesktop,setIsDesktop]=useState(window.innerWidth>=1024);
   const[showCfg,setShowCfg]=useState(false);
   const[syncStatus,setSyncStatus]=useState("");
-  const[deskTab,setDeskTab]=useState("work");
 
   useEffect(()=>{const h=()=>setIsDesktop(window.innerWidth>=1024);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h)},[]);
   useEffect(()=>{
@@ -535,7 +507,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.6.0</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.7.0</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -544,40 +516,19 @@ function App(){
       </div>
 
       {isDesktop?(
-        <div className="desk-layout">
+        <div className="desk-layout" style={{gridTemplateColumns:"1fr"}}>
           <div className="desk-main">
-            <div style={{display:"flex",gap:0,borderBottom:"1px solid #1a1a28"}}>
-              {["work","scout","report"].map(t=>(
-                <button key={t} onClick={()=>setDeskTab(t)} style={{flex:1,padding:"10px 0",background:deskTab===t?"#111118":"transparent",border:"none",borderBottom:deskTab===t?"2px solid #ff4444":"2px solid transparent",color:deskTab===t?"#ff6b6b":"#555",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{t==="work"?"워크플로우":t==="scout"?"스카우팅":"리포트"}</button>
-              ))}
-            </div>
-            {deskTab==="work"&&<WorkflowView today={today} cfg={cfg} saveCfg={saveCfg} showToast={showToast} configured={configured} isDesktop={true}/>}
-            {deskTab==="scout"&&<ScoutingView today={today} cfg={cfg} saveCfg={saveCfg} showToast={showToast}/>}
-            {deskTab==="report"&&<ReportView cfg={cfg} showToast={showToast}/>}
-          </div>
-          <div className="desk-side">
-            <DashboardView today={today} cfg={cfg}/>
-            <div className="pad">
-              <div className="desk-side-title">연결 상태</div>
-              <div className="desk-conn">
-                {[{l:"Script",ok:!!cfg.proxyUrl},{l:"Sheets",ok:!!cfg.sheetId},{l:"fal.ai",ok:!!cfg.falKey},{l:"Claude",ok:!!cfg.claudeKey},{l:"YT API",ok:!!cfg.youtubeApiKey}].map((s,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#666"}}><span className={"desk-conn-dot"+(s.ok?" on":" off")}/>{s.l}</div>
-                ))}
-              </div>
-            </div>
+            <WorkflowView today={today} cfg={cfg} saveCfg={saveCfg} showToast={showToast} configured={configured} isDesktop={true}/>
           </div>
           {showCfg&&(<div><div className="desk-cfg-overlay" onClick={()=>setShowCfg(false)}/><div className="desk-cfg-panel"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div style={{fontSize:16,fontWeight:700,color:"#ddd"}}>설정</div><button onClick={()=>setShowCfg(false)} style={{background:"none",border:"none",color:"#666",fontSize:18,cursor:"pointer"}}>✕</button></div><SettingsView cfg={cfg} saveCfg={saveCfg} configured={configured} syncStatus={syncStatus}/></div></div>)}
         </div>
       ):(
         <div>
           {tab==="work"&&<WorkflowView today={today} cfg={cfg} saveCfg={saveCfg} showToast={showToast} configured={configured} isDesktop={false}/>}
-          {tab==="scout"&&<ScoutingView today={today} cfg={cfg} saveCfg={saveCfg} showToast={showToast}/>}
-          {tab==="report"&&<ReportView cfg={cfg} showToast={showToast}/>}
-          {tab==="dash"&&<DashboardView today={today} cfg={cfg}/>}
           {tab==="cfg"&&<SettingsView cfg={cfg} saveCfg={saveCfg} configured={configured} syncStatus={syncStatus}/>}
           <div className="nav">
-            {["work","scout","report","dash","cfg"].map(t=>(
-              <button key={t} className={tab===t?"active":""} onClick={()=>setTab(t)}>{t==="work"?"워크플로우":t==="scout"?"스카우팅":t==="report"?"리포트":t==="dash"?"대시보드":"설정"}</button>
+            {["work","cfg"].map(t=>(
+              <button key={t} className={tab===t?"active":""} onClick={()=>setTab(t)}>{t==="work"?"워크플로우":"설정"}</button>
             ))}
           </div>
         </div>
@@ -623,10 +574,6 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
     const cached=sl==="A"?topicsCacheA.current:topicsCacheB.current;
     if(cached){setTopics(cached);setStep(1)}else{setTopics(null)}
   };
-
-  const daysAgo=(dateStr)=>{if(!dateStr)return null;return Math.floor((new Date()-new Date(dateStr))/(1000*60*60*24))};
-  const refAge=daysAgo(cfg.formatRefDate);
-  const refStale=refAge===null||refAge>=7;
 
 
   // ═══ v11.0: 공통 상수는 파일 상단 [블록1]로 이동됨 ═══
@@ -1326,7 +1273,6 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
   const _genTopics_A=async()=>{
     const cats={1:{cat:"건강/라이프",ex:"최근 화제된 건강 상식, 생활 습관, 음식, 운동"},2:{cat:"심리/자기계발",ex:"사람들이 궁금해하는 심리 현상, 행동 패턴, 동기부여"},3:{cat:"건강/라이프",ex:"최근 화제된 건강 상식, 수면, 피부, 다이어트"},4:{cat:"심리/자기계발",ex:"직장생활, 인간관계, 습관, 멘탈 관리"},5:{cat:"건강/라이프",ex:"음식, 운동, 생활습관 관련 화제 주제"},6:{cat:"심리/관계",ex:"주말에 가볍게 볼 수 있는 심리, 성격, 연애/관계"},0:{cat:"건강/라이프",ex:"주말 건강 루틴, 수면 습관 관련 화제 주제"}};
     const c=cats[today.dow]||cats[1];
-    const frRef=(cfg.formatRefA||"").trim();
     return `당신은 "일상 필수 상식" 채널의 리서처입니다.
 오늘의 카테고리: [${c.cat}]
 
@@ -1984,12 +1930,6 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
 
   return(
     <div className="pad">
-      {cfg.formatRefDate&&(
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",background:refStale?"#ff444410":"#4ade8010",borderRadius:8,marginBottom:10,fontSize:11}}>
-          <span style={{color:refStale?"#ff6b6b":"#4ade80"}}>📊 포맷 레퍼런스: {cfg.formatRefDate}{refStale?" (업데이트 필요)":""}</span>
-          <span style={{color:"#555"}}>스카우팅 탭에서 관리</span>
-        </div>
-      )}
 
       {/* ═══ 슬롯 바: A / B ═══ */}
       <div className="slot-bar">
@@ -2148,157 +2088,6 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   );
 }
 
-// ═══ SCOUTING (v9.2 동일 구조) ═══
-function ScoutingView({today,cfg,saveCfg,showToast}){
-  const[step,setStep]=useState(1);
-  const[dataA,setDataA]=useState("");const[dataB,setDataB]=useState("");
-  const[prompt,setPrompt]=useState("");const[refA,setRefA]=useState("");const[refB,setRefB]=useState("");
-  const[histOpen,setHistOpen]=useState(false);
-  const history=ls("scout_history")||[];
-  const buildPrompt=()=>{
-    let p="아래는 이번 주 Playboard에서 수집한 쇼츠 데이터입니다. 분석해주세요.\n\n";
-    if(dataA.trim()) p+="[채널A 데이터 — 사회시사/건강/심리]\n"+dataA.trim()+"\n\n";
-    if(dataB.trim()) p+="[채널B 데이터 — 꿀팁]\n"+dataB.trim()+"\n\n";
-    p+="분석 항목:\n1. 채널A 상위 영상 공통점 (후킹, 구조, 톤)\n2. 채널B 상위 영상 공통점\n3. 이번 주 키워드 트렌드\n4. 주제유형 분석 (브랜드해부/일상행동해부/뉴스팩트/비교형)\n";
-    p+="5. 관제탑 formatRef 압축본:\n\n[채널A]\n■ 후킹 공식: (1줄)\n■ 영상 구조: (1줄)\n■ 비주얼 트렌드: (1줄)\n■ 금주 핫키워드: k1/k2/k3\n■ 금주 히트 주제유형: (상위2개)\n■ 히트 대상: (3~5개)\n\n[채널B]\n■ 꿀팁 소개 공식: (1줄)\n■ 가격/CTA 타이밍: (1줄)\n■ 비주얼 트렌드: (1줄)\n■ 금주 핫키워드: k1/k2/k3\n■ 금주 히트 주제유형: (상위2개)\n■ 히트 대상: (3~5개)";
-    return p;
-  };
-  const genPrompt=()=>{if(!dataA.trim()&&!dataB.trim()){showToast("데이터를 먼저 입력하세요");return}setPrompt(buildPrompt());setStep(2)};
-  const saveRef=()=>{const u={...cfg};if(refA.trim())u.formatRefA=refA.trim();if(refB.trim())u.formatRefB=refB.trim();u.formatRefDate=today.dateStr;saveCfg(u);const entry={date:today.dateStr,refA:refA.trim(),refB:refB.trim()};ls("scout_history",[entry,...history].slice(0,12));showToast("✅ 저장 완료!")};
-  return(
-    <div className="sc-pad">
-      <div className="sc-step-bar">
-        {[{n:1,l:"① 수집"},{n:2,l:"② 분석/저장"}].map(s=>(
-          <div key={s.n} className={"sc-step-pill"+(step===s.n?" active":step>s.n?" done":"")} onClick={()=>{if(s.n<=step||s.n===step+1)setStep(s.n)}}>{s.l}</div>
-        ))}
-      </div>
-      {step===1&&(<div>
-        <div className="sc-card">
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:15,fontWeight:800,color:"#ddd"}}>Playboard 스카우팅</div>
-            <a href="https://playboard.co" target="_blank" className="sc-link">🔍 Playboard</a>
-          </div>
-          <label className="sc-label"><span style={{color:"#ff6b6b"}}>●</span> 채널A — 사회시사/건강/심리</label>
-          <textarea className="sc-textarea" value={dataA} onChange={e=>setDataA(e.target.value)} rows={6} placeholder={"검색어: 사회이슈, 건강, 심리, MBTI\n상위 5~10개 영상 제목+조회수+채널명 복사"}/>
-          <div style={{height:12}}/>
-          <label className="sc-label"><span style={{color:"#4ade80"}}>●</span> 채널B — 꿀팁</label>
-          <textarea className="sc-textarea" value={dataB} onChange={e=>setDataB(e.target.value)} rows={6} placeholder={"검색어: 꿀팁, 살림\n상위 5~10개 영상 제목+조회수+채널명 복사"}/>
-        </div>
-        <button className="btn btn-red" onClick={genPrompt} disabled={!dataA.trim()&&!dataB.trim()} style={{marginTop:4}}>프롬프트 생성 →</button>
-      </div>)}
-      {step===2&&(<div>
-        <div className="sc-card">
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:15,fontWeight:800,color:"#ddd"}}>Claude 프롬프트</div>
-            <button className="btn btn-blue" onClick={()=>{cp(prompt);showToast("📋 복사됨!")}} style={{width:"auto",padding:"8px 16px",fontSize:12}}>📋 복사</button>
-          </div>
-          <div className="sc-prompt-box">{prompt}</div>
-        </div>
-        <div className="sc-divider"/>
-        <div className="sc-card">
-          <div style={{fontSize:15,fontWeight:800,color:"#ddd",marginBottom:4}}>formatRef 저장</div>
-          <label className="sc-label"><span style={{color:"#ff6b6b"}}>●</span> 채널A</label>
-          <textarea className="sc-textarea" value={refA} onChange={e=>setRefA(e.target.value)} rows={5} placeholder={"■ 후킹 공식: ...\n■ 영상 구조: ...\n■ 비주얼 트렌드: ..."}/>
-          <div style={{height:10}}/>
-          <label className="sc-label"><span style={{color:"#4ade80"}}>●</span> 채널B</label>
-          <textarea className="sc-textarea" value={refB} onChange={e=>setRefB(e.target.value)} rows={5} placeholder={"■ 꿀팁 소개 공식: ...\n■ 가격/CTA 타이밍: ...\n■ 비주얼 트렌드: ..."}/>
-          <button className="btn btn-green" onClick={saveRef} disabled={!refA.trim()&&!refB.trim()} style={{marginTop:10}}>💾 formatRef 저장</button>
-        </div>
-      </div>)}
-      <div style={{marginTop:20}}>
-        <div onClick={()=>setHistOpen(!histOpen)} style={{display:"flex",justifyContent:"space-between",cursor:"pointer",padding:"8px 0"}}>
-          <span style={{fontSize:13,fontWeight:700,color:"#666"}}>{histOpen?"▾":"▸"} 히스토리 ({history.length})</span>
-        </div>
-        {histOpen&&history.map((h,i)=>(
-          <div key={i} className="sc-hist" onClick={()=>{setRefA(h.refA||"");setRefB(h.refB||"");showToast("불러옴!")}}>
-            <span style={{fontSize:12,fontWeight:700,color:"#aaa"}}>{h.date}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ═══ REPORT (v9.2 동일) ═══
-function ReportView({cfg,showToast}){
-  const[data,setData]=useState(null);const[loading,setLoading]=useState(false);const[err,setErr]=useState("");const[view,setView]=useState("overview");
-  const fetchReport=async()=>{if(!cfg.proxyUrl){setErr("Apps Script URL 필요");return}setLoading(true);setErr("");try{const r=await callProxy(cfg.proxyUrl,{action:"getReport"});if(r&&!r.error)setData(r);else setErr(r?.error||"데이터 없음")}catch(e){setErr(e.message)}setLoading(false)};
-  useEffect(()=>{if(cfg.proxyUrl)fetchReport()},[]);
-  const fmt=n=>{if(n>=1000000)return(n/1000000).toFixed(1)+"M";if(n>=1000)return(n/1000).toFixed(1)+"K";return n};
-  if(!cfg.proxyUrl)return(<div className="pad" style={{textAlign:"center",padding:40,color:"#555"}}><div style={{fontSize:24}}>📊</div><div style={{fontSize:14,fontWeight:700,color:"#888"}}>리포트</div><div style={{fontSize:12}}>설정 → Apps Script URL 연결 후</div></div>);
-  return(
-    <div className="pad">
-      <div style={{display:"flex",gap:4,marginBottom:12}}>
-        {[{k:"overview",l:"개요"},{k:"videos",l:"영상별"},{k:"trends",l:"트렌드"}].map(t=>(
-          <button key={t.k} onClick={()=>setView(t.k)} style={{flex:1,padding:"8px 0",borderRadius:8,border:view===t.k?"1px solid #ff4444":"1px solid #222",background:view===t.k?"#ff444415":"transparent",color:view===t.k?"#ff6b6b":"#555",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{t.l}</button>
-        ))}
-      </div>
-      {loading&&<div style={{textAlign:"center",padding:30,color:"#555"}}>📡 로딩 중...</div>}
-      {err&&<div style={{padding:12,background:"#ff444410",borderRadius:8,fontSize:12,color:"#ff6b6b",textAlign:"center"}}>{err}</div>}
-      {data&&view==="overview"&&(
-        <div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-            {["A","B"].map(ch=>{const s=data.summary[ch]||{views:0,likes:0,videos:0,subs:0};return(
-              <div key={ch} className="box"><div style={{fontSize:13,fontWeight:800,color:ch==="A"?"#ff6b6b":"#4ade80",marginBottom:8}}>채널{ch}</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-                  <div><div style={{fontSize:18,fontWeight:800,color:"#eee"}}>{fmt(s.views)}</div><div style={{fontSize:10,color:"#555"}}>조회수</div></div>
-                  <div><div style={{fontSize:18,fontWeight:800,color:"#eee"}}>{fmt(s.likes)}</div><div style={{fontSize:10,color:"#555"}}>좋아요</div></div>
-                  <div><div style={{fontSize:18,fontWeight:800,color:"#eee"}}>{s.videos}</div><div style={{fontSize:10,color:"#555"}}>영상</div></div>
-                  <div><div style={{fontSize:18,fontWeight:800,color:"#eee"}}>+{s.subs}</div><div style={{fontSize:10,color:"#555"}}>구독↑</div></div>
-                </div>
-              </div>
-            )})}
-          </div>
-        </div>
-      )}
-      <button className="btn btn-dark" onClick={fetchReport} style={{marginTop:10}}>{loading?"로딩...":"↻ 새로고침"}</button>
-    </div>
-  );
-}
-
-// ═══ DASHBOARD ═══
-function DashboardView({today,cfg}){
-  const[status,setStatus]=useState(null);const[loading,setLoading]=useState(false);
-  const fetch2=async()=>{if(!cfg.proxyUrl||!cfg.sheetId)return;setLoading(true);try{const r=await callProxy(cfg.proxyUrl,{action:"readStatus",sheetId:cfg.sheetId,date:today.dateStr});if(r.success)setStatus(r)}catch(e){}setLoading(false)};
-  useEffect(()=>{if(cfg.proxyUrl&&cfg.sheetId)fetch2()},[]);
-  return(
-    <div className="pad">
-      <div className="box">
-        <div style={{fontSize:12,fontWeight:700,color:"#666",marginBottom:8}}>오늘 스케줄</div>
-        <div className="rot-grid">
-          <div className="rot-card" style={{background:"#ff444408",borderColor:"#ff444433"}}>
-            <div style={{fontWeight:800,color:"#ff6b6b",fontSize:14}}>채널A</div>
-            <div style={{fontWeight:800,color:"#ddd",fontSize:16,marginTop:2}}>{displayTmpl(ROT_A[today.dow],true)}</div>
-            <div style={{fontSize:10,color:"#666",marginTop:2}}>{today.isWeekday?SCHEDULE_A.weekday:SCHEDULE_A.weekend}</div>
-          </div>
-          <div className="rot-card" style={{background:(today.hasBSlot||cfg.testMode)?"#4ade8008":"#ffffff03",borderColor:(today.hasBSlot||cfg.testMode)?"#4ade8033":"#1a1a28"}}>
-            <div style={{fontWeight:800,color:(today.hasBSlot||cfg.testMode)?"#4ade80":"#333",fontSize:14}}>채널B{cfg.testMode&&!today.hasBSlot?" 🧪":""}</div>
-            <div style={{fontWeight:800,color:(today.hasBSlot||cfg.testMode)?"#ddd":"#333",fontSize:16,marginTop:2}}>{(today.hasBSlot||cfg.testMode)?"나열형":"오늘 없음"}</div>
-            <div style={{fontSize:10,color:"#666",marginTop:2}}>{(today.hasBSlot||cfg.testMode)?(SCHEDULE_B[today.dow]||"테스트"):"화/목/토"}</div>
-          </div>
-        </div>
-      </div>
-      <div className="stat-grid">
-        <div className="stat-card"><div className="stat-val" style={{color:"#4ade80"}}>{status?.monthly?.completed||0}</div><div className="stat-lbl">이번달 완료</div></div>
-        <div className="stat-card"><div className="stat-val" style={{color:"#eab308"}}>{status?.monthly?.pending||0}</div><div className="stat-lbl">대기 중</div></div>
-        <div className="stat-card"><div className="stat-val" style={{color:"#555"}}>{status?.monthly?.errors||0}</div><div className="stat-lbl">에러</div></div>
-      </div>
-      {status&&status.rows&&status.rows.length>0&&(
-        <div className="box">
-          <div style={{fontSize:12,fontWeight:700,color:"#666",marginBottom:8}}>오늘 현황</div>
-          {status.rows.map((r,i)=>(
-            <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:i<status.rows.length-1?"1px solid #1a1a28":"none"}}>
-              <div><span style={{fontWeight:700,color:r.channel==="A"?"#ff6b6b":"#4ade80",fontSize:12}}>{r.channel}</span><span style={{color:"#999",fontSize:11,marginLeft:8}}>{(r.title||"").slice(0,25)}</span></div>
-              <span style={{fontSize:11,fontWeight:600,color:r.status==="완료"?"#4ade80":r.status==="대기"?"#eab308":"#ff4444"}}>{r.status}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      {cfg.proxyUrl?<button className="btn btn-dark" onClick={fetch2} style={{marginTop:6}}>{loading?"...":"↻ 새로고침"}</button>:<div style={{textAlign:"center",padding:20,color:"#555",fontSize:12}}>설정에서 URL 입력</div>}
-    </div>
-  );
-}
-
 // ═══ SETTINGS v10.0 ═══
 function SettingsView({cfg,saveCfg,configured,syncStatus}){
   const[local,setLocal]=useState(cfg);const[testing,setTesting]=useState(false);const[msg,setMsg]=useState("");
@@ -2331,11 +2120,6 @@ function SettingsView({cfg,saveCfg,configured,syncStatus}){
         <input className="field-input" value={local.youtubeApiKey||""} onChange={e=>setLocal(p=>({...p,youtubeApiKey:e.target.value}))} placeholder="AIzaSy..." type="password"/>
         <label className="field-label">imgbb API Key <span style={{color:"#555",fontWeight:400}}>(채널A 이미지 업로드)</span></label>
         <input className="field-input" value={local.imgbbKey||""} onChange={e=>setLocal(p=>({...p,imgbbKey:e.target.value}))} placeholder="imgbb.com 무료 가입 → API Key" type="password"/>
-        <label className="field-label">포맷 레퍼런스</label>
-        <div style={{fontSize:11,color:"#555",marginTop:4}}>채널A:</div>
-        <textarea className="field-input" value={local.formatRefA||""} onChange={e=>setLocal(p=>({...p,formatRefA:e.target.value}))} rows={3} style={{resize:"vertical",fontFamily:"inherit"}}/>
-        <div style={{fontSize:11,color:"#555",marginTop:4}}>채널B:</div>
-        <textarea className="field-input" value={local.formatRefB||""} onChange={e=>setLocal(p=>({...p,formatRefB:e.target.value}))} rows={3} style={{resize:"vertical",fontFamily:"inherit"}}/>
         <div style={{display:"flex",gap:8,marginTop:16}}>
           <button className="btn btn-red" onClick={save} style={{flex:1}}>💾 저장</button>
           <button className="btn btn-blue" onClick={test} disabled={testing} style={{flex:1}}>{testing?"테스트...":"🔗 연결 테스트"}</button>
