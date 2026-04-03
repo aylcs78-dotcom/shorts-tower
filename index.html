@@ -1,0 +1,2357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#08080c">
+<title>Shorts 관제탑 v11.5.5</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#08080c;color:#d4d4d8;font-family:'Pretendard',-apple-system,system-ui,sans-serif;max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:60px}
+button{font-family:inherit;cursor:pointer}
+textarea,input{font-family:inherit}
+.hdr{background:linear-gradient(135deg,#0c0c18,#180c0c);padding:14px 18px 10px;border-bottom:1px solid #1a1a28}
+.hdr-row{display:flex;justify-content:space-between;align-items:center}
+.hdr-logo{font-size:10px;color:#555;letter-spacing:3px;text-transform:uppercase}
+.hdr-title{font-size:18px;font-weight:800;color:#ff4444}
+.hdr-date{font-size:12px;color:#777;text-align:right}
+.hdr-day{font-size:13px;font-weight:700;text-align:right}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:#0a0a12;border-top:1px solid #1a1a28;display:flex;z-index:100}
+.nav button{flex:1;padding:10px 0 8px;background:none;border:none;font-size:11px}
+.nav button.active{color:#ff4444;font-weight:700}
+.nav button:not(.active){color:#444;font-weight:400}
+.box{background:#111118;border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid #1a1a28}
+.slot-bar{display:flex;gap:8px;margin-bottom:12px}
+.slot-btn{flex:1;padding:10px 0;border-radius:8px;border:1px solid #222;background:transparent;color:#555;font-weight:700;font-size:14px}
+.slot-btn.active{border:2px solid #ff4444;background:#ff444415;color:#ff6b6b}
+.slot-btn.disabled-slot{opacity:0.3;cursor:default}
+.slot-btn small{display:block;font-size:10px;font-weight:400;color:#666;margin-top:2px}
+.step-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.step-label{font-size:13px;font-weight:700}
+.step-label.done{color:#4ade80}
+.step-label:not(.done){color:#aaa}
+.btn{padding:10px 16px;border-radius:8px;border:none;font-weight:700;font-size:13px;width:100%}
+.btn:disabled{opacity:0.4;cursor:default}
+.btn-blue{background:#2563eb;color:#fff}
+.btn-purple{background:#7c3aed;color:#fff}
+.btn-green{background:#059669;color:#fff}
+.btn-red{background:#ff4444;color:#fff}
+.btn-dark{background:#222;color:#888;font-size:12px}
+.result-box{background:#0a0a10;border-radius:8px;padding:10px;font-size:12px;color:#bbb;max-height:200px;overflow:auto;white-space:pre-wrap;margin-top:8px;line-height:1.6}
+.input-area{width:100%;margin-top:8px;padding:10px;background:#0a0a10;border:1px solid #222;border-radius:8px;color:#ccc;font-size:12px;resize:vertical;min-height:60px}
+.script-grid{display:grid;grid-template-columns:70px 1fr;gap:4px 8px;color:#999;font-size:12px}
+.script-grid .lbl{color:#666}
+.script-grid .val{color:#eee;font-weight:600}
+.scene-item{margin-bottom:6px}
+.scene-num{color:#ff6b6b;font-size:11px;font-weight:700}
+.scene-txt{color:#bbb;margin-left:8px;font-size:11px}
+.img-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.img-grid.grid-a{grid-template-columns:1fr 1fr 1fr}
+.img-cell{background:#0a0a10;border-radius:8px;overflow:hidden;border:1px solid #222;position:relative}
+.img-cell img{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;cursor:pointer}
+.img-cell.ratio-1 img{aspect-ratio:1/1}
+.img-placeholder{aspect-ratio:9/16;display:flex;align-items:center;justify-content:center;color:#444;font-size:11px}
+.img-placeholder.ratio-1{aspect-ratio:1/1}
+.img-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:200;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.img-modal img{max-width:92%;max-height:90%;object-fit:contain;border-radius:8px}
+.img-btns{position:absolute;bottom:4px;right:4px;display:flex;gap:3px}
+.img-btns button{padding:4px 8px;border-radius:4px;border:none;background:#333;color:#ddd;font-size:10px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.stat-card{background:#111118;border-radius:10px;padding:12px 8px;text-align:center;border:1px solid #1a1a28}
+.stat-val{font-size:20px;font-weight:800}
+.stat-lbl{font-size:10px;color:#555;margin-top:2px}
+.rot-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.rot-card{border-radius:8px;padding:10px;border:1px solid #1a1a28}
+.field-label{font-size:12px;font-weight:600;color:#888;margin-top:12px;display:block}
+.field-input{width:100%;padding:10px 12px;background:#0a0a10;border:1px solid #222;border-radius:8px;color:#ccc;font-size:13px;font-family:monospace;margin-top:4px}
+.status-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;z-index:200;animation:fadeOut 1.5s ease-in-out forwards}
+@keyframes fadeOut{0%{opacity:1}70%{opacity:1}100%{opacity:0}}
+.sent-msg{margin-top:8px;padding:8px;background:#16a34a15;border-radius:8px;font-size:12px;color:#4ade80;text-align:center}
+.pad{padding:12px 16px}
+.info-row{display:flex;justify-content:space-between;align-items:center}
+.ch-a{color:#ff6b6b}.ch-b{color:#4ade80}
+.topic-card{background:#0a0a10;border:1px solid #222;border-radius:10px;padding:12px;margin-top:8px;cursor:pointer;transition:border-color 0.2s,background 0.2s}
+.topic-card:active{background:#1a1a28;border-color:#ff4444}
+.topic-card.selected{border-color:#ff4444;background:#ff444410}
+.topic-card .tc-title{font-size:14px;font-weight:700;color:#eee;margin-bottom:4px}
+.topic-card .tc-summary{font-size:11px;color:#999;line-height:1.5;margin-bottom:6px}
+.topic-card .tc-meta{display:flex;gap:6px;flex-wrap:wrap}
+.topic-card .tc-tag{font-size:10px;padding:2px 8px;border-radius:12px;background:#ffffff08;color:#777}
+.topic-card .tc-hook{font-size:10px;padding:2px 8px;border-radius:12px;background:#ff444420;color:#ff6b6b;font-weight:600}
+.topic-card .tc-facts{font-size:10px;color:#777;line-height:1.5;margin-top:4px;padding:6px 8px;background:#ffffff05;border-radius:6px;border-left:2px solid #818cf833}
+.auto-progress{background:#0a0a10;border:1px solid #1a1a28;border-radius:10px;padding:12px;margin-bottom:10px}
+.auto-progress .ap-title{font-size:13px;font-weight:700;color:#eee;margin-bottom:10px}
+.ap-steps{display:flex;gap:4px;margin-bottom:10px}
+.ap-step{flex:1;height:4px;border-radius:2px;background:#222;transition:background 0.3s}
+.ap-step.done{background:#4ade80}
+.ap-step.active{background:#ff4444;animation:pulse 1s infinite}
+.ap-step.error{background:#ef4444}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.ap-status{font-size:12px;color:#999;text-align:center}
+.ap-status.error{color:#ef4444}
+.manual-toggle{background:none;border:none;color:#444;font-size:11px;padding:8px 0;width:100%;text-align:center;margin-top:4px}
+.manual-toggle:hover{color:#666}
+/* Scouting */
+.scout-section{background:#0d0d14;border:1px solid #1a1a28;border-radius:10px;padding:12px;margin-bottom:12px}
+.scout-result{background:#08080c;border:1px solid #1a1a28;border-radius:8px;padding:10px;font-size:11px;color:#999;line-height:1.6;white-space:pre-wrap;max-height:160px;overflow:auto;margin-top:6px}
+.sc-pad{padding:14px 16px}
+.sc-step-bar{display:flex;gap:6px;margin-bottom:16px}
+.sc-step-pill{flex:1;text-align:center;padding:10px 0;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;border:1px solid #1a1a28;background:#0a0a10;color:#444}
+.sc-step-pill.active{border-color:#ff4444;background:#ff444412;color:#ff6b6b}
+.sc-step-pill.done{border-color:#4ade8044;background:#4ade8008;color:#4ade80}
+.sc-card{background:#111118;border:1px solid #1a1a28;border-radius:12px;padding:16px;margin-bottom:12px}
+.sc-label{font-size:11px;font-weight:600;color:#666;margin-bottom:6px;display:block}
+.sc-textarea{width:100%;padding:12px;background:#08080c;border:1px solid #1a1a28;border-radius:8px;color:#ccc;font-size:12px;font-family:inherit;resize:vertical;line-height:1.6}
+.sc-textarea::placeholder{color:#333}
+.sc-textarea:focus{border-color:#333;outline:none}
+.sc-link{display:inline-flex;align-items:center;gap:4px;padding:8px 14px;background:#ffffff06;border:1px solid #1a1a28;border-radius:8px;color:#888;font-size:11px;text-decoration:none;font-weight:600;transition:all 0.15s}
+.sc-link:hover{border-color:#333;color:#ccc;background:#ffffff0a}
+.sc-prompt-box{background:#08080c;border:1px solid #1a1a28;border-radius:8px;padding:14px;font-size:11px;color:#888;line-height:1.7;white-space:pre-wrap;max-height:280px;overflow:auto;margin-bottom:10px}
+.sc-hist{background:#0a0a10;border:1px solid #1a1a28;border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s}
+.sc-hist:hover{border-color:#333}
+.sc-divider{height:1px;background:#1a1a28;margin:16px 0}
+/* Video status badge */
+.vid-badge{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600;position:absolute;top:4px;left:4px}
+.vid-badge.pending{background:#eab30833;color:#eab308}
+.vid-badge.done{background:#4ade8033;color:#4ade80}
+.vid-badge.error{background:#ff444433;color:#ff4444}
+/* Desktop */
+@media(min-width:1024px){
+body{max-width:none;padding-bottom:0}
+.nav{display:none}
+.hdr{max-width:none;padding:16px 32px 12px}
+.hdr-title{font-size:22px}
+.hdr-logo{letter-spacing:5px}
+.desk-layout{display:grid;grid-template-columns:1fr 300px;gap:0;max-width:1400px;margin:0 auto}
+.desk-main{border-right:1px solid #1a1a28;min-height:calc(100vh - 60px)}
+.desk-main .pad{padding:20px 28px;max-width:none}
+.desk-side{padding:20px;background:#0a0a10;min-height:calc(100vh - 60px);overflow-y:auto}
+.desk-side .pad{padding:0}
+.desk-side .box{background:#111118}
+.desk-main .slot-bar{gap:10px}
+.desk-main .slot-btn{padding:12px 0;font-size:14px}
+.desk-main .topic-cards-row{display:grid;grid-template-columns:1fr;gap:10px}
+.desk-main .topic-cards-row .topic-card{margin-top:0}
+.desk-main .wf-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.desk-main .wf-result-grid .img-grid{grid-template-columns:1fr 1fr}
+.desk-main .wf-result-grid .img-grid.grid-a{grid-template-columns:1fr 1fr 1fr}
+.desk-cfg-toggle{background:none;border:1px solid #222;border-radius:8px;color:#666;font-size:12px;padding:6px 14px;cursor:pointer;transition:all 0.2s}
+.desk-cfg-toggle:hover{border-color:#444;color:#aaa}
+.desk-cfg-panel{position:fixed;top:0;right:0;width:400px;height:100vh;background:#0a0a10;border-left:1px solid #1a1a28;z-index:150;overflow-y:auto;padding:20px;animation:slideIn 0.2s ease}
+.desk-cfg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:140}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.desk-side-title{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:16px}
+.desk-conn{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.desk-conn-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.desk-conn-dot.on{background:#4ade80;box-shadow:0 0 6px #4ade8066}
+.desk-conn-dot.off{background:#ff4444;box-shadow:0 0 6px #ff444466}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef} = React;
+
+// ═══ v10.0 CONSTANTS ═══
+// ★ v11.0.3: 워치리스트 274편 분석 → 19시 KST 조회수 최고 → 10분 전 업로드
+// 채널A: 매일 1편 (18:50 KST)
+// 채널B: 주 3편 (화/목/토 18:40 KST)
+const DAYS_KR=["일","월","화","수","목","금","토"];
+const B_DAYS=[2,4,6]; // 화,목,토
+const SCHEDULE_A={weekday:"18:50",weekend:"18:50"};
+const SCHEDULE_B={2:"18:40",4:"18:40",6:"18:40"};
+// 템플릿/구조 로테이션 (요일 기반)
+const ROT_A={0:"T1/A형",1:"T2/B형",2:"T3/C형",3:"T4/D형",4:"T5/A형",5:"T1/B형",6:"T2/C형"};
+const STRUCTURE={A:"후킹→충격팩트→배경설명→개인해석",B:"질문제기→일반상식→뒤집기→개인해석",C:"스토리도입→사례→분석→개인해석",D:"A vs B비교→장단점→승자발표→개인해석"};
+const MOOD_CFG={urgent:{zoom:["105%","110%"],scene1Zoom:["105%","112%"],bg:"#0d0d0d",hook:"#FF3333",fade:"0.3 s"},warm:{zoom:["105%","108%"],scene1Zoom:["105%","110%"],bg:"#1a1a2e",hook:"#FFEAA7",fade:"0.8 s"},shocking:{zoom:["108%","105%"],scene1Zoom:["110%","105%"],bg:"#000000",hook:"#FFFFFF",fade:"0.15 s"},calm:{zoom:["105%","107%"],scene1Zoom:["105%","108%"],bg:"#1a1a2e",hook:"#74b9ff",fade:"1.0 s"}};
+const BGM={urgent:["https://drive.google.com/uc?export=download&confirm=t&id=1CzfdW81drUSoHTYBH3_w0qkv0xFY1CEA","https://drive.google.com/uc?export=download&confirm=t&id=1uHKL_DoUSolcDbkuA-9soSpjkeuPHt5l"],warm:["https://drive.google.com/uc?export=download&confirm=t&id=1CmlzY37mKojiBEvElJqt4_U44Yfoh5Vb","https://drive.google.com/uc?export=download&confirm=t&id=1lyle_uiewN5VGVgUFhvNuxIif8hOt5ZS"],shocking:["https://drive.google.com/uc?export=download&confirm=t&id=1ib9zaqyFf21jJ73qb7sjE6DqdBdxPpKN","https://drive.google.com/uc?export=download&confirm=t&id=1nmoMR23SiFdHoSqTFxfvy9jAjmFvFQBj"],calm:["https://drive.google.com/uc?export=download&confirm=t&id=1OynmpSnhFDUyvDIicC6X3lFzol28FLQi","https://drive.google.com/uc?export=download&confirm=t&id=1QL4yfei-vTlZfhwD_MbV2phTFC6PeqfR"]};
+const VID_A="Mx48CWClvl522or3Frvp"; // ElevenLabs 채널A SEGU 보이스
+const SCENE_COUNT_B=5; // v11.3.0: 채널B 나열형 5상황 (8초×5=40초)
+
+// ═══ [블록1] 공유 상수 — 프롬프트/로직에서 공통 참조 ═══
+const SHARED_AI_BAN='"~인 거 알아?" / "근데 진짜 문제는" / "실제로 조사에 따르면" / "솔직히 이거 안 하면 손해거든" / "악순환" / "혁신" / "게임체인저" / "~한다는 사실" / 같은 구조 4번 반복';
+const SHARED_HOOK_RULE="10자 이내, 의미 완성 필수. 단어 나열 금지. ❌ '10배세균' ✅ '네 칫솔 지금 세균밭'";
+const SHARED_TITLE_RULE="40자 이내, 끝에 #shorts";
+const SHARED_MOOD_OPT="urgent|warm|shocking|calm";
+// v11.2.5: UI 가독성 — T5/A형 대신 한글 표시
+const STRUCT_SHORT={A:"충격팩트",B:"질문뒤집기",C:"스토리분석",D:"비교형"};
+function displayTmpl(tmplStr,channelIsA){if(!channelIsA)return"나열형";const{s}=parseTmpl(tmplStr);return STRUCT_SHORT[s]||tmplStr}
+
+// ═══ 카메라 모션 프리셋 v2.0 — 느린 드리프트 위주, 줌 최소화 ═══
+// ★ v11.5.2: 줌인/줌아웃 과도→제거. "화면이 살짝 움직이는 느낌"만 유지
+// x/y = 47~53% (중앙 근처 미세 이동), sc = 105~112% (거의 고정), r = ±0.5° 이내
+const CAMERA_PRESETS={
+  urgent:[
+    {x:[{t:"0 s",v:"48%"},{t:"D",v:"52%",e:"cubic-out"}],y:[{t:"0 s",v:"48%"},{t:"D",v:"52%",e:"cubic-out"}],sc:[{t:"0 s",v:"108%"},{t:"D",v:"110%",e:"linear"}],r:[{t:"0 s",v:"0°"},{t:"D",v:"-0.3°",e:"linear"}],tr:null},
+    {x:[{t:"0 s",v:"52%"},{t:"D",v:"48%",e:"linear"}],y:[{t:"0 s",v:"50%"},{t:"D",v:"52%",e:"linear"}],sc:[{t:"0 s",v:"107%"},{t:"D",v:"109%",e:"linear"}],r:[{t:"0 s",v:"0.2°"},{t:"D",v:"-0.2°",e:"linear"}],tr:{type:"fade",duration:"0.3 s"}},
+    {x:[{t:"0 s",v:"50%"},{t:"D",v:"48%",e:"linear"}],y:[{t:"0 s",v:"52%"},{t:"D",v:"48%",e:"linear"}],sc:[{t:"0 s",v:"106%"},{t:"D",v:"110%",e:"linear"}],r:[{t:"0 s",v:"-0.2°"},{t:"D",v:"0.3°",e:"linear"}],tr:{type:"fade",duration:"0.3 s"}},
+    {x:[{t:"0 s",v:"48%"},{t:"D",v:"51%",e:"linear"}],y:[{t:"0 s",v:"49%"},{t:"D",v:"51%",e:"linear"}],sc:[{t:"0 s",v:"108%"},{t:"D",v:"112%",e:"cubic-in-out"}],r:[{t:"0 s",v:"0°"},{t:"D",v:"-0.3°",e:"linear"}],tr:{type:"fade",duration:"0.3 s"}}
+  ],
+  warm:[
+    {x:[{t:"0 s",v:"49%"},{t:"D",v:"51%",e:"linear"}],y:[{t:"0 s",v:"49%"},{t:"D",v:"51%",e:"linear"}],sc:[{t:"0 s",v:"106%"},{t:"D",v:"108%",e:"linear"}],r:[{t:"0 s",v:"0°"},{t:"D",v:"-0.3°",e:"linear"}],tr:null},
+    {x:[{t:"0 s",v:"52%"},{t:"D",v:"48%",e:"linear"}],y:[{t:"0 s",v:"50%"},{t:"D",v:"51%",e:"linear"}],sc:[{t:"0 s",v:"107%"},{t:"D",v:"109%",e:"linear"}],r:[{t:"0 s",v:"0.2°"},{t:"D",v:"-0.2°",e:"linear"}],tr:{type:"fade",duration:"0.6 s"}},
+    {x:[{t:"0 s",v:"48%"},{t:"D",v:"52%",e:"linear"}],y:[{t:"0 s",v:"51%"},{t:"D",v:"49%",e:"linear"}],sc:[{t:"0 s",v:"105%"},{t:"D",v:"108%",e:"linear"}],r:[{t:"0 s",v:"-0.2°"},{t:"D",v:"0.2°",e:"linear"}],tr:{type:"fade",duration:"0.6 s"}},
+    {x:[{t:"0 s",v:"50%"},{t:"D",v:"49%",e:"linear"}],y:[{t:"0 s",v:"48%"},{t:"D",v:"51%",e:"linear"}],sc:[{t:"0 s",v:"106%"},{t:"D",v:"110%",e:"cubic-in-out"}],r:[{t:"0 s",v:"0°"},{t:"D",v:"0.3°",e:"linear"}],tr:{type:"fade",duration:"0.6 s"}}
+  ],
+  shocking:[
+    {x:[{t:"0 s",v:"48%"},{t:"D",v:"52%",e:"cubic-out"}],y:[{t:"0 s",v:"48%"},{t:"D",v:"52%",e:"cubic-out"}],sc:[{t:"0 s",v:"108%"},{t:"D",v:"110%",e:"linear"}],r:[{t:"0 s",v:"0°"},{t:"D",v:"-0.3°",e:"linear"}],tr:null},
+    {x:[{t:"0 s",v:"52%"},{t:"D",v:"48%",e:"linear"}],y:[{t:"0 s",v:"52%"},{t:"D",v:"49%",e:"linear"}],sc:[{t:"0 s",v:"107%"},{t:"D",v:"110%",e:"linear"}],r:[{t:"0 s",v:"0.3°"},{t:"D",v:"-0.2°",e:"linear"}],tr:{type:"fade",duration:"0.2 s"}},
+    {x:[{t:"0 s",v:"50%"},{t:"D",v:"49%",e:"linear"}],y:[{t:"0 s",v:"50%"},{t:"D",v:"51%",e:"linear"}],sc:[{t:"0 s",v:"106%"},{t:"D",v:"109%",e:"linear"}],r:[{t:"0 s",v:"-0.2°"},{t:"D",v:"0.3°",e:"linear"}],tr:{type:"fade",duration:"0.2 s"}},
+    {x:[{t:"0 s",v:"49%"},{t:"D",v:"51%",e:"linear"}],y:[{t:"0 s",v:"49%"},{t:"D",v:"52%",e:"linear"}],sc:[{t:"0 s",v:"108%"},{t:"D",v:"111%",e:"cubic-in-out"}],r:[{t:"0 s",v:"0°"},{t:"D",v:"-0.3°",e:"linear"}],tr:{type:"fade",duration:"0.2 s"}}
+  ],
+  calm:[
+    {x:[{t:"0 s",v:"49%"},{t:"D",v:"51%",e:"linear"}],y:[{t:"0 s",v:"50%"},{t:"D",v:"51%",e:"linear"}],sc:[{t:"0 s",v:"105%"},{t:"D",v:"107%",e:"linear"}],r:[{t:"0 s",v:"0°"},{t:"D",v:"-0.2°",e:"linear"}],tr:null},
+    {x:[{t:"0 s",v:"51%"},{t:"D",v:"49%",e:"linear"}],y:[{t:"0 s",v:"50%"},{t:"D",v:"50%",e:"linear"}],sc:[{t:"0 s",v:"106%"},{t:"D",v:"108%",e:"linear"}],r:[{t:"0 s",v:"0.2°"},{t:"D",v:"-0.2°",e:"linear"}],tr:{type:"fade",duration:"0.8 s"}},
+    {x:[{t:"0 s",v:"50%"},{t:"D",v:"50%",e:"linear"}],y:[{t:"0 s",v:"49%"},{t:"D",v:"51%",e:"linear"}],sc:[{t:"0 s",v:"105%"},{t:"D",v:"108%",e:"linear"}],r:[{t:"0 s",v:"0°"},{t:"D",v:"0.2°",e:"linear"}],tr:{type:"fade",duration:"0.8 s"}},
+    {x:[{t:"0 s",v:"50%"},{t:"D",v:"50%",e:"linear"}],y:[{t:"0 s",v:"50%"},{t:"D",v:"50%",e:"linear"}],sc:[{t:"0 s",v:"106%"},{t:"D",v:"109%",e:"cubic-in-out"}],r:[{t:"0 s",v:"0°"},{t:"D",v:"0°",e:"linear"}],tr:{type:"fade",duration:"0.8 s"}}
+  ]
+};
+
+// ═══ 카메라 모션 엔진 ═══
+function buildTremor(cx,cy){
+  const xK=[],yK=[],rK=[];let aX=2.0,aY=2.0,aR=0.7;
+  for(let t=0;t<=0.85;t+=0.05){const s=(Math.round(t/0.05)%2===0)?-1:1;const ts=t<0.01?"0 s":t.toFixed(2)+" s";xK.push({time:ts,value:(cx+s*aX).toFixed(1)+"%"});aX=Math.max(0.3,aX*0.88)}
+  xK.push({time:"0.9 s",value:cx+"%"},{time:"1.0 s",easing:"cubic-in-out",value:cx+"%"});
+  for(let t=0;t<=0.85;t+=0.07){const s=(Math.round(t/0.07)%2===0)?-1:1;const ts=t<0.01?"0 s":t.toFixed(2)+" s";yK.push({time:ts,value:(cy+s*aY).toFixed(1)+"%"});aY=Math.max(0.3,aY*0.88)}
+  yK.push({time:"0.9 s",value:cy+"%"},{time:"1.0 s",easing:"cubic-in-out",value:cy+"%"});
+  for(let t=0;t<=0.9;t+=0.08){const s=(Math.round(t/0.08)%2===0)?1:-1;const ts=t<0.01?"0 s":t.toFixed(2)+" s";rK.push({time:ts,value:(s*aR).toFixed(1)+"°"});aR=Math.max(0.05,aR*0.85)}
+  rK.push({time:"1.0 s",easing:"cubic-in-out",value:"0°"});
+  return{xP:xK,yP:yK,rP:rK};
+}
+function applyCamAdjust(p,adj){
+  if(!adj||!Object.keys(adj).length)return p;const c=JSON.parse(JSON.stringify(p));
+  // ★ tremor 추가 시: 기존 x/y/r의 0~1초 키프레임 제거 + 1.2초 브릿지 삽입 (시간 역행 방지)
+  if(adj.tremor===true&&!c.tremorStart){
+    c.tremorStart=true;
+    const shiftKf=(arr)=>{if(!arr||!arr.length)return[];const first=arr[0];const rest=arr.filter(k=>{const t=parseFloat(k.t);return isNaN(t)?true:t>1.0});return[{t:"1.2 s",v:first.v,e:"cubic-in-out"},...rest]};
+    c.xA=shiftKf(c.x);c.yA=shiftKf(c.y);c.rA=shiftKf(c.r);delete c.x;delete c.y;delete c.r;
+  }
+  if(adj.tremor===false)c.tremorStart=false;
+  if(adj.zoom_intensity){const s=c.sc;if(s)s.forEach((k,i)=>{if(i>0){const b=parseFloat(k.v);k.v=(100+(b-100)*adj.zoom_intensity).toFixed(0)+"%"}})}
+  if(adj.zoom==="burst"&&c.sc){c.sc=[{t:"0 s",v:"100%"},{t:"65%",v:"105%",e:"linear"},{t:"D",v:"150%",e:"back-out"}]}
+  if(adj.zoom==="out"&&c.sc){const vs=c.sc.map(k=>parseFloat(k.v));const rv=[...vs].reverse();c.sc.forEach((k,i)=>{k.v=rv[i].toFixed(0)+"%"})}
+  if(adj.rotation_intensity!==undefined){const rk=c.r||c.rA;if(rk)rk.forEach(k=>{const d=parseFloat(k.v);k.v=(d*adj.rotation_intensity).toFixed(1)+"°"})}
+  return c;
+}
+function resolveKf(kfArr,dur){
+  if(!kfArr)return undefined;const ds=typeof dur==="number"?dur:parseFloat(dur);
+  return kfArr.map(k=>{const o={time:k.t==="D"?(ds+" s"):k.t,value:k.v};if(k.e)o.easing=k.e;
+    if(typeof o.time==="string"&&o.time.endsWith("%")){o.time=(ds*parseFloat(o.time)/100).toFixed(1)+" s"}return o});
+}
+
+// ═══ HELPERS ═══
+function getToday(){const d=new Date();return{dow:d.getDay(),dowKr:DAYS_KR[d.getDay()],dateStr:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"),isWeekday:d.getDay()>=1&&d.getDay()<=5,isSaturday:d.getDay()===6,isSunday:d.getDay()===0,hasBSlot:B_DAYS.includes(d.getDay())}}
+function parseTmpl(t){const m=t&&t.match(/T(\d)\/(\w)형/);return m?{t:m[1],s:m[2]}:{t:"?",s:"?"}}
+function cp(text){try{navigator.clipboard.writeText(text)}catch(e){const t=document.createElement("textarea");t.value=text;document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t)}}
+function ls(k,v){if(v===undefined){try{const r=localStorage.getItem("sct_"+k);return r?JSON.parse(r):null}catch(e){return null}}else{try{localStorage.setItem("sct_"+k,JSON.stringify(v))}catch(e){}}}
+function getRecentTitles(channel,max=20){return(ls("recent_titles_"+channel)||[]).slice(0,max)}
+function addRecentTitle(channel,title,character){if(!title)return;const key="recent_titles_"+channel;const list=ls(key)||[];const filtered=list.filter(t=>t!==title);filtered.unshift(title);ls(key,filtered.slice(0,30));if(character){const ck="recent_chars_"+channel;const cl=ls(ck)||[];if(!cl.includes(character)){cl.unshift(character);ls(ck,cl.slice(0,30))}}}
+function getRecentChars(channel,max=20){return(ls("recent_chars_"+channel)||[]).slice(0,max)}
+
+// ★ v11.3.5: 자막 시스템 — 채널별 분리
+// 채널A: transcript_source (ElevenLabs→Whisper 전사 = 정확한 타이밍 자동 싱크)
+// 채널B: transcript_source (Kling 음성→Whisper 전사 = 정확한 타이밍 자동 싱크) ★ v11.4.5 복귀
+
+// 채널B 전용: 10자 이내 어절 경계 분할 + 글자수 비례 duration
+function makeSubtitleChunks(fullText,totalDur,styleOverride){
+  if(!fullText)return[];
+  const clean=fullText.replace(/\|/g," ").replace(/\s{2,}/g," ").trim();
+  // 어절(공백) 단위로 분리 후 10자 이내 chunk로 묶기
+  const words=clean.split(/\s+/);
+  const chunks=[];
+  let buf="";
+  for(const w of words){
+    if(buf.length>0&&(buf+" "+w).length>10){chunks.push(buf);buf=w;}
+    else{buf=buf?buf+" "+w:w;}
+  }
+  if(buf)chunks.push(buf);
+  if(chunks.length===0)return[];
+  const totalChars=chunks.reduce((a,c)=>a+c.length,0);
+  const base={width:"88%",y:"78%",x_alignment:"50%",y_alignment:"50%",
+    fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",
+    font_family:"Noto Sans KR",font_weight:"900",font_size:"7 vmin",line_height:"130%",...(styleOverride||{})};
+  let t=0;
+  return chunks.map(chunk=>{
+    const chunkDur=Math.max(0.6,Math.round(totalDur*(chunk.length/totalChars)*10)/10);
+    const el={type:"text",...base,text:chunk,time:t+" s",duration:chunkDur+" s",
+      animations:[{time:"start",duration:"0.15 s",type:"fade"},{time:"end",duration:"0.15 s",type:"fade",reversed:true}]};
+    t=Math.round((t+chunkDur)*10)/10;
+    return el;
+  });
+}
+
+// ═══ buildJSON_A v10.2: 카메라 모션 하이브리드 시스템 ═══
+// ★ v11.3.3: 영어 단위를 한글 음차로 변환 (음성용만, 자막은 원본 유지)
+function unitToKorean(txt){
+  return (txt||"")
+    .replace(/(\d+(?:\.\d+)?)\s*cm/gi,"$1센치")
+    .replace(/(\d+(?:\.\d+)?)\s*mm/gi,"$1밀리")
+    .replace(/(\d+(?:\.\d+)?)\s*kg/gi,"$1킬로")
+    .replace(/(\d+(?:\.\d+)?)\s*mg/gi,"$1밀리그램")
+    .replace(/(\d+(?:\.\d+)?)\s*ml/gi,"$1밀리리터")
+    .replace(/(\d+(?:\.\d+)?)\s*km/gi,"$1킬로미터")
+    .replace(/\bBPA\b/g,"비피에이").replace(/\bUV\b/g,"유브이")
+    .replace(/\bLED\b/g,"엘이디").replace(/\bDNA\b/g,"디엔에이")
+    .replace(/\bAI\b/g,"에이아이").replace(/\bpH\b/g,"피에이치");
+}
+// ★ v11.3.5: 숫자+단위를 한글 발음으로 변환 (vid 프롬프트 대사 전용, 자막에는 적용 안 함)
+// Kling 네이티브 오디오가 "200배"를 제대로 못 읽음 → "이백 배"로 변환
+function toSpeechKorean(txt){
+  if(!txt)return"";
+  let s=unitToKorean(txt);
+  // 숫자→한자어 한글 (최대 5자리까지)
+  const digitMap=["영","일","이","삼","사","오","육","칠","팔","구"];
+  const posMap=["","십","백","천","만"];
+  function numToKr(n){
+    if(n===0)return"영";
+    const str=String(n);const len=str.length;let result="";
+    for(let i=0;i<len;i++){
+      const d=parseInt(str[i]);const pos=len-1-i;
+      if(d===0)continue;
+      if(d===1&&pos>0)result+=posMap[pos];
+      else result+=digitMap[d]+(posMap[pos]||"");
+    }
+    return result||"영";
+  }
+  // 고유어 숫자 (번/개/마리/가지/장/잔/병/벌/켤레/그릇/살/명)
+  const nativeMap=["영","한","두","세","네","다섯","여섯","일곱","여덟","아홉","열"];
+  function numToNative(n){
+    if(n>=1&&n<=10)return nativeMap[n];
+    if(n>=11&&n<=19)return"열"+nativeMap[n-10];
+    if(n===20)return"스무";
+    return numToKr(n); // 20 이상은 한자어 폴백
+  }
+  // 고유어 단위: 번, 개, 마리, 가지, 장, 잔, 병, 벌, 켤레, 그릇, 살, 명
+  s=s.replace(/(\d+)\s*(번|개|마리|가지|장|잔|병|벌|켤레|그릇|살|명)/g,
+    (_,num,unit)=>numToNative(parseInt(num))+" "+unit);
+  // 한자어 단위: 배, 도, 초, 분, 시간, 만, 억, 원, 퍼센트 등
+  s=s.replace(/(\d+)\s*(배|도|초|분|시간|만|억|원|퍼센트|그램|리터|센치|밀리|킬로|밀리그램|밀리리터|킬로미터)/g,
+    (_,num,unit)=>numToKr(parseInt(num))+" "+unit);
+  // 남은 독립 숫자 (단위 없는 것) — 변환하지 않음 (맥락 모호)
+  return s;
+}
+// ═══ buildJSON — 채널A v2: 멀티이미지 + ABCD모션 + 두줄제목 + 레터박스 ═══
+// ★ v11.5.1: 둥근쇼츠 레퍼런스 기반 + img3 duration:null + ElevenLabs 감정 파라미터
+// imgs: 12장 배열 (씬당 3장), hookL1/hookL2: 상단 두줄 제목
+function buildJSON_A(imgs,tts,mood,hookL1,hookL2,vid,bgmOverride){
+  const bgm=bgmOverride||(BGM[mood]||BGM.urgent)[Math.floor(Math.random()*(BGM[mood]||BGM.urgent).length)];
+  // ★ v11.5.2: ElevenLabs 감정 파라미터 — stability↓↓ style↑↑ → 감정 굴곡 극대화
+  const prov="elevenlabs model_id=eleven_multilingual_v2 voice_id="+(vid||VID_A)+" stability=0.20 similarity_boost=0.75 style=0.80 use_speaker_boost=true";
+  const cleanTTS=tts.map(t=>(t||"").replace(/\[serious\]|\[pause\]|\[firm\]|\[excited\]|\[calm\]|\[whisper\]/gi,"").replace(/\|/g," ").replace(/\s{2,}/g," ").trim());
+  const speechTTS=cleanTTS.map(t=>unitToKorean(t));
+  // ★ v11.5.0: ABCD 4가지 모션 타입 (둥근쇼츠: 느린 베이스 + 빠른 펀치 교대)
+  const MF=[
+    (d)=>({xs:[{time:"0 s",value:"100%"},{time:d+" s",value:"112%",easing:"cubic-in-out"}],ys:[{time:"0 s",value:"100%"},{time:d+" s",value:"112%",easing:"cubic-in-out"}],x:[{time:"0 s",value:"52%"},{time:d+" s",value:"48%",easing:"linear"}]}),
+    (d)=>({xs:[{time:"0 s",value:"105%"},{time:"0.3 s",value:"140%",easing:"cubic-out"},{time:d+" s",value:"132%",easing:"cubic-in-out"}],ys:[{time:"0 s",value:"105%"},{time:"0.3 s",value:"140%",easing:"cubic-out"},{time:d+" s",value:"132%",easing:"cubic-in-out"}],x:[{time:"0 s",value:"55%"},{time:"0.3 s",value:"40%",easing:"cubic-out"},{time:d+" s",value:"42%",easing:"linear"}]}),
+    (d)=>({xs:[{time:"0 s",value:"125%"},{time:d+" s",value:"108%",easing:"cubic-in-out"}],ys:[{time:"0 s",value:"125%"},{time:d+" s",value:"108%",easing:"cubic-in-out"}],x:[{time:"0 s",value:"45%"},{time:d+" s",value:"52%",easing:"linear"}]}),
+    (d)=>({xs:[{time:"0 s",value:"115%"},{time:d+" s",value:"125%",easing:"cubic-in-out"}],ys:[{time:"0 s",value:"115%"},{time:d+" s",value:"125%",easing:"cubic-in-out"}],x:[{time:"0 s",value:"35%"},{time:"0.25 s",value:"65%",easing:"cubic-out"},{time:d+" s",value:"62%",easing:"linear"}]})
+  ];
+  const MSEQ=[0,1,2,3,0,1,2,3,0,1,2,3]; // ABCD 순환
+  const scenes=[0,1,2,3].map(i=>{
+    const vo="VO-"+(i+1);
+    const ttsLen=(cleanTTS[i]||"").length;
+    const sceneDur=Math.round((ttsLen/9.2+0.3)*10)/10;
+    // ★ 씬당 3이미지 시간 분배
+    const d1=Math.round(sceneDur*0.36*10)/10;
+    const d2=Math.round(sceneDur*0.28*10)/10;
+    const d3=Math.round(Math.max(1.5,sceneDur-d1-d2)*10)/10;
+    const ds=[d1,d2,d3];
+    // ★ 3이미지 순차 배치 (time 명시 필수 — 자동순차 안됨)
+    const imgBase=i*3;
+    let ct=0;
+    const imgEls=[];
+    for(let j=0;j<3;j++){
+      const mi=MSEQ[imgBase+j];
+      const dur=ds[j];
+      const m=MF[mi](dur);
+      // ★ v11.5.1: 마지막 이미지(j===2) duration:null → TTS 끝까지 자동 채움 (검은화면 제거)
+      const el={type:"image",source:imgs[imgBase+j]||"",width:"140%",height:"140%",fit:"cover",time:ct+" s",duration:j===2?null:dur+" s",x_scale:m.xs,y_scale:m.ys};
+      if(m.x)el.x=m.x;
+      imgEls.push(el);
+      ct=Math.round((ct+dur)*10)/10;
+    }
+    const comp={type:"composition",track:1,clip:true,y:"60%",width:"100%",height:"80%",elements:[
+      ...imgEls,
+      {name:vo,type:"audio",source:speechTTS[i]||"",provider:prov},
+      // ★ v11.5.4: shape 패딩 제거 — TTS 오디오 실제 길이가 composition 길이를 자동 결정
+      // ★ v11.5.0: 자막 — composition 안에서 transcript_source 참조 (밖에서는 VO name 못 찾음)
+      {type:"text",transcript_source:vo,transcript_maximum_length:8,transcript_split:"word",y:"75%",width:"90%",x_alignment:"50%",y_alignment:"50%",fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",font_family:"Noto Sans KR",font_weight:"900",font_size:"9 vmin",background_color:"rgba(0,0,0,0.7)",background_x_padding:"25%",background_y_padding:"20%",background_border_radius:"10%"}
+    ]};
+    // ★ v11.5.4: transition:true 제거 — 씬 겹침 없이 TTS 끝난 후 다음 씬 시작 (대사 잘림 방지)
+    if(i>0){comp.animations=[{time:"start",duration:"0.2 s",type:"fade"}]}
+    return comp;
+  });
+  return JSON.stringify({output_format:"mp4",width:1080,height:1920,fps:30,fill_color:"#000000",elements:[
+    ...scenes,
+    // Track 2: 첫줄 제목 흰색 (영상 내내 고정) — YT UI 버튼 아래로
+    {type:"text",track:2,text:hookL1||"",y:"7%",width:"85%",x_alignment:"50%",y_alignment:"50%",fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.2 vmin",font_family:"Noto Sans KR",font_weight:"900",font_size:"9 vmin",duration:null},
+    // Track 3: 둘째줄 제목 노란색 (영상 내내 고정)
+    {type:"text",track:3,text:hookL2||"",y:"13.5%",width:"85%",x_alignment:"50%",y_alignment:"50%",fill_color:"#FFD700",stroke_color:"#000000",stroke_width:"1.2 vmin",font_family:"Noto Sans KR",font_weight:"900",font_size:"9 vmin",duration:null},
+    // Track 4: BGM
+    {type:"audio",track:4,duration:null,source:bgm,volume:"15%",loop:true,audio_fade_out:1}
+  ]});
+}
+
+// ═══ buildJSON — 채널B: Kling MP4 영상 이어붙이기 + 자동 자막 오버레이 ═══
+// ★ v11.0.2: BGM 완전 제거 — Kling 네이티브 오디오(대사+효과음+환경음)로 충분
+function buildJSON_B(videoUrls,tts,mood,hook){
+  const m=MOOD_CFG[mood]||MOOD_CFG.urgent;
+  // ★ v11.5.4: transition:true 제거 — 씬 겹침 없이 영상 완전 재생 후 전환 (대사 잘림 방지)
+  const transTypes=[null,
+    {time:"start",duration:0.2,type:"fade"},
+    {time:"start",duration:0.2,type:"fade"},
+    {time:"start",duration:0.2,type:"fade"},
+    {time:"start",duration:0.2,type:"fade"}
+  ];
+  const scenes=Array.from({length:SCENE_COUNT_B},(_,i)=>{
+    const vidName="VID-"+(i+1);
+    // ★ v11.4.5: transcript_source 복귀 — Kling 음성을 Whisper가 자동 전사 → 완벽 타이밍 싱크
+    // Kling 한국어 발음 95% 정확 → Whisper 전사도 높은 정확도
+    // Beat1 동작 구간(0~2초)에 말 안 하면 → 자막도 안 나옴 (자동!)
+    // 멀티캐릭터 화자 전환도 → 실제 발화 시점에 자막 표시 (자동!)
+    const comp={type:"composition",track:1,elements:[
+      {name:vidName,type:"video",source:videoUrls[i]||"",width:"100%",height:"100%",fit:"cover",volume:"100%"},
+      // ★ transcript_source: 비디오 음성 → Whisper 자동 전사 → 자막 싱크
+      {type:"text",transcript_source:vidName,transcript_effect:"highlight",transcript_maximum_length:10,
+        y:"78%",width:"88%",height:"20%",x_alignment:"50%",y_alignment:"50%",
+        fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",
+        font_family:"Noto Sans KR",font_weight:"900",font_size:"6.5 vmin",line_height:"130%",
+        transcript_color:"#FFD700"}
+    ]};
+    if(transTypes[i]) comp.animations=[transTypes[i]];
+    return comp;
+  });
+  // ★ v11.3.0: BGM 없음 — Kling 영상 5개 순차 재생, 총 길이 = 5씬 합산
+  return JSON.stringify({output_format:"mp4",width:1080,height:1920,fps:30,fill_color:m.bg||"#000",elements:[
+    ...scenes,
+    // Hook
+    {type:"text",track:2,text:hook,duration:"3 s",y:"12%",width:"90%",height:"14%",x_alignment:"50%",y_alignment:"50%",
+      fill_color:m.hook,stroke_color:"#000000",stroke_width:"1.5 vmin",
+      font_family:"Noto Sans KR",font_weight:"900",font_size:"14 vmin",
+      shadow_color:"rgba(0,0,0,0.8)",shadow_blur:"2 vmin",
+      animations:[{time:"start",duration:"0.4 s",type:"scale",start_scale:"150%",end_scale:"100%",easing:"back-out"},{time:"end",duration:"0.5 s",reversed:true,type:"fade"}]}
+  ]});
+}
+
+// ═══ API 헬퍼 ═══
+async function callClaude(proxyUrl,claudeKey,prompt,search){
+  const r=await callProxy(proxyUrl,{action:"callClaude",claudeApiKey:claudeKey,prompt:prompt,useSearch:!!search});
+  if(r.success){
+    let text=r.text||"";
+    text=text.replace(/<[^>]*?cite[^>]*?>/gi,"").replace(/<[^>]*?thinking[^>]*?>[\s\S]*?<[^>]*?thinking[^>]*?>/gi,"").replace(/<[^>]*?source[^>]*?>/gi,"");
+    text=text.replace(/\n{3,}/g,"\n\n").trim();
+    return text;
+  }
+  throw new Error(r.error||"Claude API 실패");
+}
+// ★ v11.5.5: callProxy — AbortController 30초 timeout 추가 (무한 대기 방지)
+async function callProxy(url,payload,timeoutMs){
+  const timeout=timeoutMs||30000; // 기본 30초
+  for(let attempt=0;attempt<3;attempt++){
+    const ac=new AbortController();
+    const timer=setTimeout(()=>ac.abort(),timeout);
+    try{
+      const r=await fetch(url,{method:"POST",body:JSON.stringify(payload),redirect:"follow",headers:{"Content-Type":"text/plain"},signal:ac.signal});
+      clearTimeout(timer);
+      const t=await r.text();
+      try{return JSON.parse(t)}catch(e){
+        const s=t.indexOf("{");if(s===-1)return{error:"JSON 없음"};
+        let d=0,end=-1;for(let i=s;i<t.length;i++){if(t[i]==="{")d++;if(t[i]==="}")d--;if(d===0){end=i;break}}
+        if(end>s)try{return JSON.parse(t.substring(s,end+1))}catch(e2){try{return JSON.parse(t.substring(s,end+1).replace(/[\r\n\t]/g," "))}catch(e3){}}
+        return{error:"JSON 파싱 실패: "+t.substring(0,100)}}
+    }catch(e){
+      clearTimeout(timer);
+      const reason=e.name==="AbortError"?"타임아웃 ("+Math.round(timeout/1000)+"초)":e.message;
+      console.log("⚠️ callProxy 시도 "+(attempt+1)+"/3 실패: "+reason);
+      if(attempt<2) await new Promise(res=>setTimeout(res,2000));
+      else return{error:"네트워크 오류 (3회 재시도 실패): "+reason};
+    }
+  }
+}
+
+// ═══ MAIN APP ═══
+function App(){
+  const[tab,setTab]=useState("work");
+  const[today]=useState(getToday());
+  const[cfg,setCfg]=useState(()=>{
+    const saved=ls("config")||{proxyUrl:"",falKey:"",claudeKey:"",sheetId:"",voiceIdA:VID_A,youtubeApiKey:"",imgbbKey:"",formatRefA:"",formatRefB:"",formatRefDate:"",testMode:false};
+    if(saved.testMode===undefined) saved.testMode=false;
+    return saved;
+  });
+  const[toast,setToast]=useState("");
+  const[modalImg,setModalImg]=useState(null);
+  const[isDesktop,setIsDesktop]=useState(window.innerWidth>=1024);
+  const[showCfg,setShowCfg]=useState(false);
+  const[syncStatus,setSyncStatus]=useState("");
+  const[deskTab,setDeskTab]=useState("work");
+
+  useEffect(()=>{const h=()=>setIsDesktop(window.innerWidth>=1024);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h)},[]);
+  useEffect(()=>{
+    const boot=ls("config");
+    if(boot&&boot.proxyUrl&&boot.sheetId){
+      setSyncStatus("loading");
+      callProxy(boot.proxyUrl,{action:"loadConfig",sheetId:boot.sheetId}).then(r=>{
+        if(r.success&&r.config&&Object.keys(r.config).length>0){
+          const merged={...boot};
+          Object.keys(r.config).forEach(k=>{if(r.config[k])merged[k]=r.config[k]});
+          merged.proxyUrl=boot.proxyUrl;merged.sheetId=boot.sheetId;
+          setCfg(merged);ls("config",merged);setSyncStatus("synced");
+        }else{setSyncStatus("")}
+      }).catch(()=>{setSyncStatus("error")});
+    }
+  },[]);
+
+  const saveCfg=useCallback((c)=>{
+    setCfg(c);ls("config",c);
+    if(c.proxyUrl&&c.sheetId){
+      const syncData={falKey:c.falKey||"",claudeKey:c.claudeKey||"",voiceIdA:c.voiceIdA||"",youtubeApiKey:c.youtubeApiKey||"",imgbbKey:c.imgbbKey||"",formatRefA:c.formatRefA||"",formatRefB:c.formatRefB||"",formatRefDate:c.formatRefDate||""};
+      callProxy(c.proxyUrl,{action:"saveConfig",sheetId:c.sheetId,config:syncData}).then(r=>{if(r.success)setSyncStatus("synced")}).catch(()=>{});
+    }
+  },[]);
+  const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2000)};
+  const configured=!!(cfg.proxyUrl&&cfg.falKey&&cfg.claudeKey&&cfg.sheetId);
+
+  return(
+    <div>
+      {modalImg&&<div className="img-modal" onClick={()=>setModalImg(null)}><img src={modalImg} alt="확대"/></div>}
+      {toast&&<div className="toast">{toast}</div>}
+      <div className="hdr">
+        <div className="hdr-row">
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.5.5</span></div></div>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
+            <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
+          </div>
+        </div>
+      </div>
+
+      {isDesktop?(
+        <div className="desk-layout">
+          <div className="desk-main">
+            <div style={{display:"flex",gap:0,borderBottom:"1px solid #1a1a28"}}>
+              {["work","scout","report"].map(t=>(
+                <button key={t} onClick={()=>setDeskTab(t)} style={{flex:1,padding:"10px 0",background:deskTab===t?"#111118":"transparent",border:"none",borderBottom:deskTab===t?"2px solid #ff4444":"2px solid transparent",color:deskTab===t?"#ff6b6b":"#555",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{t==="work"?"워크플로우":t==="scout"?"스카우팅":"리포트"}</button>
+              ))}
+            </div>
+            {deskTab==="work"&&<WorkflowView today={today} cfg={cfg} saveCfg={saveCfg} showToast={showToast} configured={configured} isDesktop={true}/>}
+            {deskTab==="scout"&&<ScoutingView today={today} cfg={cfg} saveCfg={saveCfg} showToast={showToast}/>}
+            {deskTab==="report"&&<ReportView cfg={cfg} showToast={showToast}/>}
+          </div>
+          <div className="desk-side">
+            <DashboardView today={today} cfg={cfg}/>
+            <div className="pad">
+              <div className="desk-side-title">연결 상태</div>
+              <div className="desk-conn">
+                {[{l:"Script",ok:!!cfg.proxyUrl},{l:"Sheets",ok:!!cfg.sheetId},{l:"fal.ai",ok:!!cfg.falKey},{l:"Claude",ok:!!cfg.claudeKey},{l:"YT API",ok:!!cfg.youtubeApiKey}].map((s,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#666"}}><span className={"desk-conn-dot"+(s.ok?" on":" off")}/>{s.l}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {showCfg&&(<div><div className="desk-cfg-overlay" onClick={()=>setShowCfg(false)}/><div className="desk-cfg-panel"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><div style={{fontSize:16,fontWeight:700,color:"#ddd"}}>설정</div><button onClick={()=>setShowCfg(false)} style={{background:"none",border:"none",color:"#666",fontSize:18,cursor:"pointer"}}>✕</button></div><SettingsView cfg={cfg} saveCfg={saveCfg} configured={configured} syncStatus={syncStatus}/></div></div>)}
+        </div>
+      ):(
+        <div>
+          {tab==="work"&&<WorkflowView today={today} cfg={cfg} saveCfg={saveCfg} showToast={showToast} configured={configured} isDesktop={false}/>}
+          {tab==="scout"&&<ScoutingView today={today} cfg={cfg} saveCfg={saveCfg} showToast={showToast}/>}
+          {tab==="report"&&<ReportView cfg={cfg} showToast={showToast}/>}
+          {tab==="dash"&&<DashboardView today={today} cfg={cfg}/>}
+          {tab==="cfg"&&<SettingsView cfg={cfg} saveCfg={saveCfg} configured={configured} syncStatus={syncStatus}/>}
+          <div className="nav">
+            {["work","scout","report","dash","cfg"].map(t=>(
+              <button key={t} className={tab===t?"active":""} onClick={()=>setTab(t)}>{t==="work"?"워크플로우":t==="scout"?"스카우팅":t==="report"?"리포트":t==="dash"?"대시보드":"설정"}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══ WORKFLOW v10.0 ═══
+function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
+  const[slot,setSlot]=useState("A"); // "A" or "B"
+  const[step,setStep]=useState(0);
+  const[loading,setLoading]=useState("");
+  const[topics,setTopics]=useState(null);
+  const[topicsRaw,setTopicsRaw]=useState("");
+  const[topicCandidatesB,setTopicCandidatesB]=useState(null); // v11.4.0: 2단계 분리 — step1 후보
+  const[picked,setPicked]=useState("");
+  const[script,setScript]=useState(null);
+  const[images,setImages]=useState([null,null,null,null]);
+  const[videoUrls,setVideoUrls]=useState([null,null,null,null]);
+  const[sent,setSent]=useState(false);
+  const[autoPhase,setAutoPhase]=useState("");
+  const[autoError,setAutoError]=useState("");
+  const[showManual,setShowManual]=useState(false);
+  const lastApiTime=useRef(0);
+  const topicsCacheA=useRef(null);
+  const topicsCacheB=useRef(null);
+  const rejectedTopicsA=useRef([]);
+  const rejectedTopicsB=useRef([]);
+  // v11.3.3: 방식2 — 성공/실패 주제 기록 (프롬프트 품질 향상용)
+  const topicHistoryB=useRef({good:[],bad:[]});
+
+  const isA=slot==="A";
+  const tmpl=isA?ROT_A[today.dow]:"나열형";
+  const{t,s}=parseTmpl(tmpl);
+  const scheduleTime=isA?(today.isWeekday?SCHEDULE_A.weekday:SCHEDULE_A.weekend):(SCHEDULE_B[today.dow]||"—");
+
+  // 슬롯 전환
+  const resetSlot=(sl)=>{
+    if(sl==="B"&&!today.hasBSlot&&!cfg.testMode) return;
+    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setTopicsRaw("");setTopicCandidatesB(null);
+    rejectedTopicsA.current=[];rejectedTopicsB.current=[];
+    const cached=sl==="A"?topicsCacheA.current:topicsCacheB.current;
+    if(cached){setTopics(cached);setStep(1)}else{setTopics(null)}
+  };
+
+  const daysAgo=(dateStr)=>{if(!dateStr)return null;return Math.floor((new Date()-new Date(dateStr))/(1000*60*60*24))};
+  const refAge=daysAgo(cfg.formatRefDate);
+  const refStale=refAge===null||refAge>=7;
+
+
+  // ═══ v11.0: 공통 상수는 파일 상단 [블록1]로 이동됨 ═══
+
+  // ═══ v11.4.6: 채널A 대본 프롬프트 — 독립4정보 공감형 ═══
+  const _buildScriptPrompt_A=(topicText)=>{
+    return `너는 유튜브 쇼츠 대본 작가야. 채널A(공감형 정보) 영상 1편.
+
+[주제 + 팩트] ${topicText}
+
+★ 위 주제의 facts 필드에 이미 검증된 팩트가 있다. 반드시 이 팩트를 활용해서 대사를 구성하라.
+★ facts를 무시하고 새로운 팩트를 만들지 마.
+
+[★ 핵심 원칙]
+1. 말투: 캐주얼 해요체 통일. "~거든요, ~잖아요, ~이래요, ~인데요"
+   ★ 친한 형/누나가 알려주는 느낌. 딱딱한 합쇼체(~습니다) 금지.
+   ★ 반말 금지. 시청자에게 직접 말하는 정보 채널이라 해요체가 신뢰감+친근감 동시 확보.
+2. 톤: 한 사람한테 직접 말하는 것처럼
+3. 리듬: 짧은 문장 + 긴 문장 섞기
+4. ★ 정보 비중 70% 이상. 감정만 있고 정보 없는 씬 금지.
+
+[★★★ v11.4.6 핵심: 독립 4정보 나열형]
+기승전결 금지. 4씬이 각각 독립적인 정보 1개씩.
+하나의 공감 앵글 아래 서로 다른 영역의 팩트 4개를 나열.
+어떤 씬부터 봐도 바로 이해. 씬 간 스토리 연결 없음.
+4씬 다 보면 "이유가 이렇게 많았어?" 반응 유도.
+
+★ 공감형 = "다 겪는 것" + "진짜 이유" 구조.
+시청자가 "나도 이래!" 하고 댓글 쓰고 싶어야 성공.
+❌ 정보만 던지기: "베개 높이 6~8cm가 정답이에요" → 시청자 "아 그렇구나" → 넘김 → 댓글 0
+✅ 공감+정보: "주말에 푹 쉬었는데 월요일만 되면 온몸이 무겁잖아요. 이게 소셜 시차라고..." → "맞아 나도!" → 댓글
+
+[★★★ 글자수 — 반드시 지킬 것]
+★★★ 핵심: 모든 tts는 반드시 2문장으로 써라. 마침표(./요./죠.) 2개 필수. 1문장만 쓰면 무조건 실패.
+- tts1~tts4: 각각 62~70자 (2문장)
+- ElevenLabs TTS 실측 속도 ~9.2자/초. 70자=약7.6초. 75자 넘으면 실패 처리.
+★★★ 62자 미만 = 무조건 실패. 정보가 빈약하다는 증거.
+★★★ 70자 초과 = 무조건 실패. 대사가 잘린다.
+
+✅ 좋은 대사 (62~70자, 2문장, 공감+정보):
+"주말에 두 시간만 늦게 일어나도 뇌 시계가 뒤로 밀려요. 월요일에 뇌는 아직 일요일이라 매주 해외여행 시차를 겪는 거랑 같대요." (71자)
+"월요일 아침에 스트레스 호르몬이 일주일 중 최고치로 올라가거든요. 심장마비도 월요일 아침이 가장 많다는 연구 결과가 있어요." (69자)
+"주말에 치킨에 맥주에 야식까지 먹잖아요. 소화기관이 쉬지를 못해서 월요일에 몸이 무거운 게 위장 피로일 수 있어요." (64자)
+
+★ 1씬 = 2문장. 3문장 이상 넣으면 시청자가 기억 못 함.
+
+[★★★ AI 대본 티 금지 표현]
+${SHARED_AI_BAN}
+
+[★★★ TTS 발음 안전 규칙 — v11.2.9]
+★★ 이 규칙은 tts1~tts4 대사에만 적용.
+tts 대사에서 영어 약어·단위는 원본 그대로 표기 (pH, UV, BPA, LED, AI, cm, kg 등).
+★ 코드가 음성용 한글 변환을 자동 처리하므로 한글 음차(피에이치, 유브이)로 쓰지 마.
+★ 숫자·퍼센트·배수는 아라비아 숫자 그대로 표기. TTS가 알아서 한국어로 읽음.
+  ✅ "pH 안 맞아서" / "UV 차단" / "BPA 없는" / "99%" / "180도" / "200배"
+  ❌ "피에이치 안 맞아서" / "유브이 차단" / "비피에이 없는" (한글 음차 금지)
+
+[★★★ v11.2.0: facts 강제 활용 규칙]
+- facts에 있는 모든 수치가 tts1~4 어딘가에 반드시 등장해야 함. 하나라도 빠지면 실패.
+- facts에 없는 수치/주장을 대본에서 새로 만들어내면 실패. facts에 있는 것만 써라.
+- 대본은 facts를 "입히는" 역할. facts가 뼈대, 대본이 옷.
+- ❌ facts에 "23%"가 있는데 대본에 안 나옴 → 실패
+- ❌ facts에 없는 "절반이 착각" 같은 주장을 대본에서 지어냄 → 실패
+- ✅ facts의 수치를 자연스러운 대화체로 풀어서 4씬에 배분
+★ v11.3.1: facts에 기관명/연도가 있으면 대본에서도 반드시 한 번 이상 언급.
+  ❌ "연구 결과 37% 줄어든다" → 출처 없는 주장 = 신뢰도 낮음
+  ✅ "서울대 연구팀이 확인했는데 37% 줄어든대" → 출처 있는 주장 = 신뢰도 높음
+
+[★★ v11.4.6: 독립 4정보 나열 구조]
+4씬이 각각 완전히 다른 영역의 독립 정보.
+하나의 공감 앵글 아래 서로 다른 각도의 팩트 4개.
+예: "월요일 피곤한 이유" → 수면/호르몬/식습관/심리 각각 다른 영역.
+
+씬1: ★ 가장 공감 강한 정보. "다 겪어봤는데" 느낌. 첫 2초에 스크롤 멈춤.
+씬2: ★ 충격/반전 정보. 수치가 반드시 포함. "이게 이렇게 심각해?" 반응.
+씬3: ★ 의외의 각도. 시청자가 예상 못 한 원인/이유. "이것도 이유였어?" 발견.
+씬4: ★ 가장 실용적 정보 또는 가장 강한 반전. 마지막까지 시청하게.
+
+★ 4씬 전부 수치 1개 이상. 수치 없는 씬 = 실패.
+★ 4씬이 같은 영역이면 실패. 서로 다른 각도여야 "이유가 이렇게 많았어?" 반응.
+★ CTA 금지. 영상 안에서 "저장해주세요" / "구독해주세요" 금지.
+
+[★ desc(설명란) 규칙]
+영상 핵심 팩트를 2~3줄로 요약. 이모지 1~2개, 핵심만.
+예: "✅ 에어컨 전기요금 줄이는 법\\n1. 26도 자동모드가 가장 효율적\\n2. 선풍기 병행 시 체감 3도↓\\n3. 필터 2주마다 청소하면 15% 절감"
+
+[★ hook 규칙]
+화면 상단에 3초간 큰 글씨로 표시되는 텍스트. 10자 이내.
+★ 시청자가 읽고 바로 "뭐??" 하고 영상을 멈춰야 함.
+★ 반드시 의미가 완성된 문장/구절이어야 함. 단어 나열 금지.
+❌ "10배세균" (뭔 말?) / "65도 죽음" (의미 불명) / "46%위험" (맥락 없음)
+✅ "에어컨 이렇게 쓰면 병나요" / "매일 먹는데 독이래요" / "90%가 모르는 사실"
+
+[기타]
+- 제목 ${SHARED_TITLE_RULE}
+- hashtags: 주제와 관련된 구체적 해시태그 3~5개. ★ 매번 주제에 맞게 동적 생성.
+  ❌ 매번 "#필수상식 #생활정보" 고정 (알고리즘이 같은 풀에만 노출)
+  ✅ "#에어컨 #전기요금 #여름꿀팁 #필수상식" (주제 키워드 + 채널 태그)
+  ★ #필수상식은 항상 포함하되, 나머지 2~4개는 주제별로 달라야 함
+- tags: 검색용 키워드 5~8개 (해시태그와 별도)
+- mood: ${SHARED_MOOD_OPT} 자동판단
+- TTS에 [serious] [pause] 같은 태그 넣지 마
+- 루핑: 씬4 마지막이 씬1 처음과 이어지면서도 "뭔가 더 있다"는 느낌
+
+[★ 카메라 모션 미세조정]
+기본 카메라는 무드에 맞게 자동 적용됨. 대본 감정에 따라 필요한 씬만 조정해.
+변경 없으면 빈 객체 {}.
+옵션: "tremor":true(떨림추가), "zoom":"burst"(정지→폭발), "zoom":"out"(줌아웃),
+"zoom_intensity":0.5~2.0(줌강도배수), "rotation_intensity":0~2.0(회전강도배수)
+★ scene1의 초반 임팩트를 약화하는 조정 금지. 강화만 가능.
+감정가이드: 충격/반전→tremor:true 또는 zoom:"burst" / 위축/슬픔→zoom:"out" / 여운→zoom_intensity:0.8~1.0(차분하게)
+
+★★ 모든 필드(title·hook·tts·desc 등)에서 숫자는 아라비아 숫자 그대로 (99%, 180도, 900만). 영어 약어도 원본 그대로.
+반드시 아래 JSON으로만 응답:{"title":"","desc":"","hashtags":"","tags":"","hook":"10자이내","mood":"${SHARED_MOOD_OPT}","tts1":"[공감+정보].(62~70자,2문장)","tts2":"[충격+수치].(62~70자,2문장)","tts3":"[의외+수치].(62~70자,2문장)","tts4":"[실용or반전].(62~70자,2문장)","cam_adjust":{"scene1":{},"scene2":{},"scene3":{},"scene4":{}}}`;
+  };
+
+  // ═══ v11.3.0: 채널B 대본 프롬프트 — 1주제 × 5사물 나열형 (벤치마크: 사물의참견) ═══
+  const _buildScriptPrompt_B=(topicText)=>{
+    return `너는 유튜브 쇼츠 대본 작가야. 채널B(생활 의인화 드라마) 나열형 영상 1편.
+
+[주제 + 팩트] ${topicText}
+
+★ 위 주제의 items 배열에 5개 사물과 각각의 팩트가 있다. 반드시 이 팩트를 활용.
+
+[★★★ v11.3.0 핵심: 1주제 × 5사물 나열형]
+하나의 큰 주제 아래, 씬마다 다른 사물이 등장해서 1인칭 반말로 팩트를 던지는 구조.
+각 씬 완전 독립. 씬 간 스토리 연결 없음. 어디서 봐도 바로 이해.
+벤치마크: 사물의참견 (5주 12만 구독, 씬당 ~8초, 5씬 40초)
+
+[★★★ 대사 공식 — 씬당 "원펀치"]
+"나 OO인데 + 잘못된 행동/비유 + 수치 + 상식파괴 or 행동팁" = 한 문장에 전부
+
+벤치마크 실제 대사 (59자):
+"나 꿀인데 끓는 물에 나를 넣는 건 내 효소를 화형시키는 짓이야 60도 넘으면 난 그냥 비싼 설탕물일 뿐이라고 제발 미지근한 물에 살살 타서 마셔줘"
+
+분석: [자기소개] + [잘못된 행동] + [과격한 비유] + [수치] + [상식파괴] + [행동팁] 전부 한 문장
+
+★ 이 수준으로 매 씬 대사를 작성해라. 정보가 빈약하면 실패.
+
+[★ 캐릭터 개성 부여 — 필수]
+5사물이 모두 같은 톤으로 말하면 실패.
+각 캐릭터는 자기 물리적 특성에서 나오는 비유와 말투를 써야 함.
+필수 요소:
+1. "나 OO인데" — 자기 소개로 시작
+2. 물리적 비유 — 자기 재질/기능에서 나오는 표현 (꿀: "화형", 프라이팬: "벗겨지다", 수세미: "내 몸에 산다")
+3. 자기 입장에서의 감정 — 분노/억울/간청/자학/빈정 중 캐릭마다 다르게
+4. 끝맺음 — 행동 지시("~해줘") 또는 반전 팩트("~인 거 알아?")
+
+[★★★ v11.3.5 개그 원칙 — 차별화 핵심]
+① 각 캐릭터는 자기 물리적 특성에서 나오는 과장된 비유를 반드시 1개 써라
+  꿀: "화형", 프라이팬: "벗겨지다", 배수구: "숨 막혀", 수세미: "내 몸에 산다"
+② 5캐릭터 감정이 전부 같으면 실패. 분노/간청/빈정/겁먹음/자신감 중 겹치지 않게.
+③ 5씬 중 최소 2씬은 "환경이 캐릭터를 공격하는" 슬랩스틱 상황을 대사에 힌트로 넣어라.
+  프라이팬: "말하다가 밑에서 불 올라와서 엉덩이 탔어" → 이미지/영상에서 실제로 불에 타는 장면
+  수세미: "물벼락 맞았어" → 수도꼭지에서 물이 쏟아지는 장면
+  전자레인지: "나 안에서 스파크 터졌어" → 감전되는 장면
+  ★ 슬랩스틱 힌트가 대사에 있어야 이미지/영상 프롬프트가 이를 반영할 수 있다.
+
+[★★★ 5씬 배치]
+- tts1: ★ 가장 충격적. 첫 2초에 시청자가 "뭐?" 하고 멈춰야 함
+- tts2: 잘못된 습관/상식 파괴 각도
+- tts3: 의외의 팩트 각도
+- tts4: 구체적 행동팁 + 수치
+- tts5: ★ 반전 + 루핑 트리거. 5번째가 가장 세야 함. 처음부터 다시 보게
+
+★ 5개 사물이 각각 다른 팩트. 같은 말 반복 금지.
+★ 매 씬 수치 1개 이상. 수치 없는 씬 = 실패.
+
+[★★★ 글자수 — 절대 규칙]
+- tts1~tts5: 각각 50~65자
+- 발화 속도 ~7.5자/초. 50자=7초, 65자=9초. 씬당 7~8초 타겟.
+★★★ 50자 미만 = 무조건 실패. 정보가 빈약하다는 증거.
+★★★ 65자 초과 = 무조건 실패. 대사가 잘린다.
+★★★ 이 범위는 협상 불가. 글자수를 세고 응답해라.
+
+[나쁜 대사 vs 좋은 대사]
+❌ 32자: "야 나 도마인데 내 칼자국 사이에 세균이 변기의 200배야" (팩트만 던짐, 행동팁 없음, 비유 없음)
+✅ 55자: "나 도마인데 맨날 칼질만 하고 안 씻지 내 칼자국 사이에 세균이 변기의 200배야 식초물에 10분만 담가주면 안 돼?" (잘못된 행동+팩트+수치+행동팁)
+
+❌ 28자: "나 수세미인데 2주 넘기면 세균 1억이야 갈아줘" (너무 짧, 비유 없음)
+✅ 55자: "나 수세미인데 언제 갈아준 거야 2주 넘기면 내 몸에 세균 1억 마리 사는 거 알아? 그걸로 네 밥그릇 닦는 거야" (빈정+수치+충격)
+
+[★★★ 전문 용어 금지]
+❌ "레지오넬라균" → ✅ "80도에서도 안 죽는 세균"
+❌ "BPA 성분" → ✅ "환경호르몬"
+
+[★★★ AI 대본 티 금지]
+${SHARED_AI_BAN}
+
+[★★★ TTS 발음 안전 규칙]
+tts 대사에서 영어 약어·단위는 원본 그대로 표기 (pH, UV, BPA 등). 한글 음차 금지.
+숫자·퍼센트는 아라비아 숫자 그대로 (99%, 180도, 200배).
+
+[★ desc] 큰 주제 기준으로 핵심 팁 요약. 반말 유지. 이모지 1~2개.
+[★ hook] ${SHARED_HOOK_RULE}
+[기타]
+- 제목 ${SHARED_TITLE_RULE}
+- hashtags: 주제 관련 3~5개. ★ #살림꿀팁 항상 포함.
+- tags: 검색용 키워드 5~8개
+- mood: ${SHARED_MOOD_OPT}
+
+★★ 모든 필드에서 숫자는 아라비아 숫자 그대로. 영어 약어도 원본 그대로 (코드가 음성 변환 자동 처리).
+반드시 아래 JSON으로만 응답:{"title":"","desc":"","hashtags":"","tags":"","hook":"10자이내","mood":"${SHARED_MOOD_OPT}","char1":"씬1사물","char2":"씬2사물","char3":"씬3사물","char4":"씬4사물","char5":"씬5사물","tts1":"나OO인데~(50~65자)","tts2":"나OO인데~(50~65자)","tts3":"나OO인데~(50~65자)","tts4":"나OO인데~(50~65자)","tts5":"나OO인데~(50~65자)"}`;
+  };
+
+  // ═══ v11.3.0: 채널B 전용 상수 — 나열형 ═══
+  const SPEECH_RATE=7.5; // v11.3.0: 사물의참견 실측 59자/8초 = ~7.4자/초
+  const calcDuration=(txt)=>8; // v11.4.4: 8초 고정 (Kling O3) (5씬×8초=40초)
+  const VOICE_DESC="bratty high-pitched squeaky Korean cartoon voice";
+
+  // ═══ v11.0: 채널A 이미지 프롬프트 — 주제 맞춤 자유 구성 ═══
+  const _buildImgPrompt_A=(scriptData,topicText)=>{
+    return `아래 대본의 각 씬에 맞는 Nano Banana 2 이미지 프롬프트를 생성해.
+
+★ img1~img4: Nano Banana 2 T2I 프롬프트 (영어, 60~100단어)
+★ NB2는 thinking model — 태그 나열 금지, 크리에이티브 디렉터처럼 자연어로 지시
+★ 스타일: photorealistic cinematic photography
+★ 한국 환경 필수
+★ 4장 모두 다른 피사체+구도+장면+카메라 언어
+
+[★ 사람 등장 규칙 — v11.0]
+대사 내용에 따라 자유롭게 판단하되:
+- 한국인이 나와야 하는 경우: 일상생활(수면/식사/운동/출퇴근), 건강/심리 주제, 한국 환경 속 행동 묘사
+  → "a Korean man/woman in their 30s" 명시. 한국 가정/사무실/거리 배경.
+- 외국인이 나와도 되는 경우: 해외 뉴스/해외 사례/글로벌 이슈, 연구 결과 인용 장면
+  → 국적 명시 없이 자연스럽게
+- 오브젝트만으로 충분한 경우: 제품/음식/소품이 주제의 핵심일 때
+  → 사람 없이 시네마틱 오브젝트
+
+[★★ 사람 일관성 — 같은 사람이 여러 씬에 나올 때]
+4장에 같은 인물이 나온다면:
+- img1 프롬프트에 외형 묘사를 상세하게 (머리 길이/색, 체형, 의상, 나이대)
+- img2~4 프롬프트에 "same person as img1:" 후 동일 외형 묘사 반복
+- 얼굴 안 나오는 앵글 우선 (뒷모습, 손/발/허리 클로즈업, 오버헤드, 실루엣)
+  → 얼굴이 안 보이면 일관성 문제 자체가 없음
+- 얼굴이 보여야 하는 경우에만 정면/측면 사용
+
+[주제] ${topicText}
+[씬1] ${scriptData.tts1}
+[씬2] ${scriptData.tts2}
+[씬3] ${scriptData.tts3}
+[씬4] ${scriptData.tts4}
+
+[★ NB2 프롬프트 공식]
+[피사체+상태+행동] → [한국 환경 배경+소품] → [카메라+렌즈+조리개] → [조명+색온도]
+
+필수 포함:
+- 카메라 언어: "Shot on Sony A7III, 85mm f/1.8" / "Shot on Fujifilm X-T5, 23mm f/2.8" 등 구체적 하드웨어
+- 재질 구체성: "brushed aluminum" / "worn oak wood grain" / "frosted glass" 등 물리적 재질
+- 조명 방향: "warm golden light from left window" / "cold fluorescent overhead" 등
+- ❌ "8k, masterpiece, best quality" 같은 태그 금지
+- ❌ "cinematic, realistic" 같은 추상적 단어만 나열 금지
+- ✅ 구체적 상황 묘사로 대체
+
+[★★ 핵심 원칙: 대사 내용이 구도를 결정한다 — v11.0.1]
+각 씬의 대사를 읽고 "이 대사에서 시청자가 봐야 할 것"을 먼저 정해라.
+그 오브젝트/행동/상황이 이미지의 중심이어야 한다.
+★ 앵글/구도를 미리 고정하지 마. 대사 키워드가 자연스러운 앵글을 결정함.
+
+[★★★ v11.0.4: 4장의 환경/상황/구도가 전부 달라야 함]
+★ 대사 키워드가 환경을 결정한다. 4개 대사가 다르면 4개 환경도 달라야 한다.
+★ "책상+노트북+남성"이 4장에 반복되면 실패. 이건 포토스톡이지 쇼츠가 아니다.
+
+[★★★ v11.3.3: 대사의 핵심 행동을 이미지로 보여줘라]
+★ 대사를 읽고 "이 장면을 영상으로 찍는다면 뭐가 보여야 하나?"를 먼저 정해라.
+★ 대사에 나오는 동작/상황/수치가 이미지에 직접 반영돼야 한다.
+
+❌ 나쁜 연결 (대사 키워드 무시):
+  대사: "시속 4킬로로 천천히 걸으면 운동 효과가 거의 없거든요" 
+  → img: 거실 테이블 + 슬리퍼 + 물병 (걷기랑 전혀 무관)
+  
+  대사: "걷기 속도를 올려보세요"
+  → img: 어두운 방 + 노트 + 안경 (걷기와 무관한 분위기 사진)
+
+✅ 좋은 연결 (대사 키워드 반영):
+  대사: "시속 4킬로로 천천히 걸으면 운동 효과가 거의 없거든요"
+  → img: Korean woman walking very slowly on a park trail, other joggers passing by her, autumn trees, her phone showing a fitness app with "4.0 km/h", looking bored and casual. Shot on Sony A7III, 35mm f/2, warm afternoon sunlight filtering through leaves.
+  
+  대사: "시속 6~8킬로로 숨이 살짝 찰 정도로 빠르게 걸어보세요"
+  → img: Close-up of Korean woman's legs power-walking on urban sidewalk, running shoes hitting pavement, slight motion blur on feet, sweat droplets on calf, smartwatch on wrist showing "7.2 km/h". Shot on Fujifilm X-T5, 56mm f/1.4, low angle.
+
+★ 핵심: 대사에 "걷기"가 있으면 걷는 장면, "수면"이 있으면 자는 장면, "음식"이 있으면 먹는 장면.
+★ 분위기 사진/인테리어 사진으로 빠지면 실패.
+
+❌ 4장 다 같은 환경:
+  씬1: 책상에서 노트북 → 씬2: 책상에서 안경 → 씬3: 책상에서 폰 → 씬4: 책상에서 스탠드
+✅ 대사가 환경을 결정:
+  씬1("안경 쓰고 계신가요?") → 사무실에서 모니터 보는 사람 + 블루라이트 반사
+  씬2("차이가 0%") → 클로즈업: 두 렌즈를 나란히 비교하는 손 + 시력검사표 배경
+  씬3("밤 9시 이후 밝기 낮추고") → 침대에 누워서 어둠 속에서 폰 보는 모습
+  씬4("노란빛도 수면 방해") → 야간 창문 도시 불빛 + 침대 협탁 위 스탠드 불빛
+
+★ 각 대사에서 핵심 동작/상황/시간대를 뽑아 → 그 상황이 벌어지는 장소로 환경을 바꿔라.
+
+❌ 실패: 대사와 무관한 이미지 (대사가 "비타민C"인데 밥상 사진)
+❌ 실패: 피사체만 덩그러니 — 배경 없음, 환경 소품 없음 (광고 사진)
+❌ 실패: 검은 배경 + 오브젝트만 (쇼츠 피드에서 "영상 끝났나?" → 스크롤)
+✅ 성공: 피사체 + 한국 환경 + 주변 소품 2~3개가 스토리를 말해줌
+  예: 비타민C 알약이 한국 식탁 위에 쏟아져 있고, 옆에 물컵, 뒤에 아침 식사 그릇들
+
+[★★ 환경 스토리텔링 — v11.0.1 핵심]
+★ 피사체:환경 비율 = 50:50. 피사체가 화면의 70% 이상 차지하면 실패.
+★ 매 장면마다 대사 키워드에서 나온 소품 2~3개가 피사체 주변에 배치.
+★ 한국 환경의 생활감이 느껴져야 함 (가전, 식기, 가구, 창문 빛 등).
+
+[★★ 대사→이미지 변환 순서]
+① 대사에서 핵심 키워드 1~2개 뽑기 (오브젝트/행동/증상)
+② 그 키워드가 이미지의 피사체가 됨
+③ 대사에서 연관 소품 2~3개 뽑기 (피사체 주변에 배치)
+④ 한국 환경 배경 + 카메라 + 조명으로 감싸기
+★ 피사체가 주인공이고, 소품이 스토리를 보조하고, 배경이 공간감을 줌.
+
+[★★ 조명 — NB2에게 맡기지 마, 매 씬마다 확정]
+★ 반드시 방향(from left/overhead/backlit) + 색온도(warm/cool/golden) + 종류(natural/fluorescent/ambient) 3가지 포함
+실내 낮: "Warm natural daylight from left window, soft ambient fill"
+실내 밤: "Cool white overhead fluorescent, warm accent from desk lamp"
+야외 낮: "Golden hour backlight, soft fill from reflected pavement"
+야외 밤: "Cool blue moonlight mixed with warm sodium streetlight"
+★ 조명이 없으면 NB2가 플랫한 조명을 기본값으로 쓴다 = 품질 하락
+
+[씬별 톤 — 앵글 고정 없음, 대사가 결정]
+img1: ★ 첫 프레임 = 쇼츠 썸네일. "이게 뭐지?" 호기심 유발.
+  - 대사의 핵심 상황을 환경 안에서 보여주기 (피사체 + 주변 소품 + 한국 공간)
+  - ❌ 극단적 클로즈업 (환경 맥락이 사라져서 "이게 뭔 상황인지" 모름)
+img2: 상식 파괴 — 대사의 충격 포인트를 시각적으로 보여주기
+  - 다른 앵글에서 같은 주제. 환경 소품이 충격을 보조.
+img3: 해결책 — 구체적 행동이 보이는 장면 (사람이 뭔가를 하고 있는 모습 + 주변 환경)
+img4: 루핑 트리거 — 대사의 "더 무서운 것"을 암시하는 장면
+  - 같은 공간이지만 조명/분위기가 바뀐 환경. 암시적 소품 배치.
+  - ❌ 검은 배경 (쇼츠에서 스크롤 유발) → ✅ 환경 유지 + 조명으로 무드 전환
+
+★ Ultra-high definition photorealistic quality, cinematic shallow depth of field, film grain, natural atmosphere. Vertical 9:16. No random text no watermarks. Product labels and brand markings are natural and allowed.
+
+반드시 아래 JSON으로만 응답:
+{"img1":"영어 60~100단어","img2":"영어 60~100단어","img3":"영어 60~100단어","img4":"영어 60~100단어"}`;
+  };
+
+  // ═══ v11.3.5: 채널B 이미지 프롬프트 — Pixar 3D + 슬랩스틱 ═══
+  const _buildImgPrompt_B=(scriptData,topicText)=>{
+    const chars=Array.from({length:SCENE_COUNT_B},(_,i)=>scriptData["char"+(i+1)]||"object");
+    const ttsLines=Array.from({length:SCENE_COUNT_B},(_,i)=>`씬${i+1} [${chars[i]}](${calcDuration(scriptData["tts"+(i+1)])}초): ${scriptData["tts"+(i+1)]}`).join("\n");
+    return `너는 사물의참견급 Pixar 단편 애니메이션의 미술감독이야.
+아래 나열형 대본을 읽고 5장의 독립 이미지 프롬프트를 작성해.
+
+★★★ 핵심: 씬마다 다른 캐릭터가 등장. 5장은 완전히 다른 사물이 주인공.
+
+[대본 — 5사물 나열형]
+${ttsLines}
+
+[★★★ v11.3.5 비주얼: Pixar 3D 의인화]
+캐릭터 = Pixar 3D animated 사물 캐릭터
+환경 = 한국 가정/실제 장소 (사물이 실제로 쓰이는 곳)
+이펙트 (물/불/전기/연기/세균) = 리얼 CG
+
+[★ Pixar 캐릭터 규칙]
+- 사물 본체의 포토리얼 재질 유지 (나무결, 금속광택, 스펀지 구멍, 플라스틱 광택)
+- ★ 얼굴은 NB2 품질의 핵심. 아래 4요소를 전부 묘사해라:
+  눈: 홍채색(brown/green/hazel) + 눈꺼풀(heavy-lidded/wide-open) + 감정(bloodshot/sparkling/teary) + "glossy animated pupils"
+  눈썹: 사물 재질(metal/plastic/wooden)로 만들어진 + 방향(furrowed/raised/one-up-one-down)
+  입: 재질 성형(molded from [재질]) + 형태(downturned frown/wide grin/shocked O-shape)
+  전체: "soulful expressive face [감정] molded directly from [사물 재질], with a clean Pixar finish"
+- 작은 흰 장갑 팔 (tiny white-gloved hands) — 항상 뭔가를 잡거나 밀거나 던지는 중
+- 사람 등장 시 사람도 반드시 "Pixar 3D animated" 명시 (얼굴 안 보이는 구도)
+
+[★★★ 환경 규칙]
+- 사물이 실제로 쓰이는 장소가 배경 (한국 가정에 고정하지 마)
+  주방사물(수세미/도마/프라이팬) → 한국 주방
+  욕실사물(칫솔/수건/면도기) → 한국 욕실
+  세탁사물(섬유유연제/세탁기) → 한국 세탁실
+  자동차(타이어/핸들) → 한국 도로/주차장
+  음식(바나나/계란) → 냉장고 안/마트/식탁
+- ★★★ 한국 소품은 환경에 어울리는 것만 배치 (주방이면 CJ세제/참이슬, 욕실이면 죽염치약/애경, 헬스장이면 물통/수건/운동장갑 — 맥락에 안 맞는 소품 금지)
+- 환경에 생활감 (기름때, 물자국, 낡은 흔적) = 리얼리티
+- ★ 환경에 맥락 맞는 배경 활동 (헬스장=운동하는 Pixar 사람, 마트=카트 미는 사람, 주방=김 나는 냄비 — 빈 공간 금지)
+- ★ BODY(신체) 캐릭터는 카메라를 해당 부위의 실제 높이에 맞출 것
+
+[★ 부캐릭터 + 연쇄반응 + 슬랩스틱 필수]
+- 부캐릭터 1개: 주변 소품 하나에 Pixar 얼굴 넣기 (장갑이 도망, 계란이 겁먹음)
+- ★★★ 연쇄반응 1개: 뭔가 넘어지거나 쏟아지거나 도망가는 중
+- 캐릭터가 반드시 소품 1개를 잡거나 밀거나 던지고 있어야 함 (혼자 서서 표정만 짓기 금지)
+- ★★★ 슬랩스틱 씬 (대사에 힌트가 있는 씬만): 환경이 캐릭터를 공격하는 순간을 그려라
+  불에 타는 중 → 엉덩이에서 연기, 캐릭터 깜짝 놀란 표정
+  물벼락 → 수도꼭지에서 물 쏟아지고 흠뻑 젖은 캐릭터
+  감전 → 스파크 + 머리카락(눈썹) 곤두선 캐릭터
+  칼에 찍힘 → 칼날이 몸에 박혀있고 비명 지르는 캐릭터
+
+[★ CG 이펙트 규칙]
+- 물/불/전기/연기/증기/세균/온도 → 리얼 CG로 묘사
+- 세균: tiny green glowing bacteria figures with evil faces crawling
+
+[★★★ NB2 최고 품질 7-Layer 공식 — 이 순서대로 써라]
+NB2는 thinking model — 태그 나열 금지, 자연어로 지시.
+★ 프롬프트 문장 순서가 곧 품질. 반드시 L1→L7 순서를 지켜라.
+
+L1 스타일 앵커 (첫 문장): "Masterful Pixar style 3D render, ultra-high definition."
+L2 카메라+구도: 서술적 표현으로 ("A masterful medium-angle portrait capturing..." / "A dramatic low-angle hero shot revealing...")
+  ★ 미디엄 샷 기본 (환경+캐릭터+소품이 다 보이게). 씬1만 클로즈업 허용.
+L3 캐릭터 코어:
+  ① 재질 상세 (scratches, stains, heat marks, dents, worn edges — 사용 흔적 3개 이상)
+  ② 얼굴: "soulful expressive face [감정] molded from [재질]"
+     눈: 홍채색(brown/green/hazel) + 눈꺼풀(heavy-lidded/wide-open) + 감정(bloodshot/sparkling/teary) + "glossy animated pupils"
+     눈썹: 재질(metal/plastic/wooden) + 방향(furrowed/raised/one-up-one-down)
+     입: 재질 성형(molded from [재질]) + 형태(downturned frown/wide grin/shocked O-shape)
+  ③ 행동+자세: 반드시 뭔가를 잡거나/밀거나/던지는 중 (혼자 서서 표정만 짓기 금지)
+  ④ 마감: "with a clean Pixar finish"
+L4 배경 밀도: 환경에 맞는 브랜드 제품 3~5개 (주방=LG냉장고/쿠쿠밥솥, 헬스장=나이키/언더아머, 욕실=LG생건 — 맥락 무시 브랜드 금지)
+L5 한국 소품: 환경에 맞는 생활감 소품 3~5개 (주방=행주/국자/양념통, 헬스장=물통/운동장갑/수건, 욕실=칫솔꽂이/수건걸이)
+L6 조명 (NB2에게 맡기지 마 — 반드시 확정):
+  ★ 방향(from left/overhead/backlit) + 색온도(warm/cool/golden) + 종류(natural/fluorescent/ambient) 3가지 포함
+  주방: "Volumetric warm natural daylight from left window, soft interior ambient fill"
+  욕실: "Cool white overhead fluorescent, warm accent from night-light"
+  야외: "Golden hour backlight, soft fill from reflected pavement"
+L7 품질 테일 (마지막 문장): "Masterful Pixar 3D animation quality, ultra-high definition with extreme processing power. Cinematic shallow depth of field, film grain, natural atmosphere. Vertical 9:16. No random text no watermarks. Product labels and brand markings are natural and allowed."
+
+[장면 유형 자동 판단]
+사람에게 착용(WORN) → 사람+사물 함께, 사람도 Pixar 3D, 얼굴 안 보이는 구도
+사람에게 사용당함(USED) → Pixar 3D 사람 행동이 사물에 가해지는 순간
+자기 환경 단독(SOLO) → 환경 소품 3레이어 채우기
+신체 부위(BODY) → 신체 표면에 Pixar 얼굴+팔 직접, 별도 피규어 금지
+
+[재질 구체성]
+❌ "wooden board" → ✅ "worn oak cutting board with deep knife scars and food stain patina"
+❌ "blue bottle" → ✅ "glossy cerulean blue HDPE plastic bottle with molded grip ridges"
+
+[★★★ 브랜드 적용 규칙]
+제품(세제, 섬유유연제 등) → 한국 유명 브랜드명 적용 (Downy, CJ 참그린, LG 죽염)
+일반 사물(수세미, 도마 등) → 브랜드 없음, 재질/형태/사용감으로 묘사
+★ 주변 소품 브랜드: 최대 2~3개, 반드시 환경에 맞는 브랜드만 (주방=참이슬/신라면, 헬스장=게토레이/프로틴 — 헬스장에 카스맥주 같은 맥락 불일치 절대 금지)
+
+반드시 아래 JSON으로만 응답:
+{"img1":"80~120단어","img2":"80~120단어","img3":"80~120단어","img4":"80~120단어","img5":"80~120단어"}`;
+  };
+
+  // ═══ v11.3.5: 채널B vid 프롬프트 — Pixar 3D + 슬랩스틱 ═══
+  const _buildVidPrompt_B=(scriptData,topicText)=>{
+    const chars=Array.from({length:SCENE_COUNT_B},(_,i)=>scriptData["char"+(i+1)]||"object");
+    // ★ v11.4.4: vid 대사에 toSpeechKorean 적용 (Kling 음성 정확도 향상)
+    const ttsLines=Array.from({length:SCENE_COUNT_B},(_,i)=>`씬${i+1} [${chars[i]}](${calcDuration(scriptData["tts"+(i+1)])}초): ${toSpeechKorean(scriptData["tts"+(i+1)])}`).join("\n");
+    return `너는 Kling 3.0 I2V 영상의 연기 감독이야.
+아래 나열형 대본을 읽고 5씬 각각의 독립된 Beat 구조 연기 지시(vid)를 작성해.
+
+★★★ 핵심: 이건 쇼츠야! 임팩트 있고 재밌어야 함. 밋밋한 리액션은 실패.
+★★★ 씬마다 다른 캐릭터. 각 vid는 해당 씬의 사물 캐릭터에 맞는 독립 연기.
+
+[대본 — 5사물 나열형]
+${ttsLines}
+
+[vid 규칙 — Kling 3.0 Beat v4 구조]
+- 첫 줄 = 환경 설정 (공간 + 조명)
+- Beat 1 (0-2s): 초기 동작 1개, Pixar squash-and-stretch 과장
+- Beat 2 (2-7s): [Character: Pixar 3D animated [사물], 톤]: "대사"
+  + Speaking while [동시 동작]
+- Beat 3 (7-8s): 끝 포즈 — 카메라를 향한 표정/제스처
+- Camera: Beat별 동기 부여 카메라 (하나의 주된 움직임)
+- Sound: 환경음 + 효과음 + sharp cartoon gasps between sentences
+
+[★ 호흡 최적화 — 테스트 검증]
+- 톤 키워드 필수: "energetic but with quick breaths between sentences"
+- ❌ "slow deliberate" 금지 (톤 낮아짐)
+- 대사 구두점: 느낌표! 물음표?! 쉼표, 적극 사용 (에너지 유지 + 호흡)
+- ❌ 말줄임표... 과다 금지 (느린 톤 유도)
+
+[감정별 톤]
+분노: "bratty high-pitched angry cartoon voice, energetic with sharp breaths between sentences"
+충격: "high-pitched panicked cartoon voice, energetic with breathless gasps between phrases"
+자신감: "bratty smug high-pitched cartoon voice, confident and unhurried with dramatic pauses"
+절망: "high-pitched cartoon voice starting strong then crumbling, voice cracking with trembling whimpers"
+
+[★ 연기 강도 — 쇼츠는 과장이 정답]
+- 감정 100%: 화나면 부들부들, 자랑하면 가슴 펴고 턱, 억울하면 팔 휘저으며 항의
+- Speaking while [동작]: 대사+동작 동시 수행 (끊김 없이)
+- 개그 리액션: flinch, jump back, slam, throw arms up, stomp feet
+- ❌ 대사 중간에 "Pause." 삽입 금지 (어색한 공백)
+- ❌ 정적인 "고개만 살짝" → 쇼츠에서 죽은 영상
+
+[vid 형식 — 150~220단어, Beat 구조]
+"[환경 설정]
+
+Beat 1 (0-2s): [초기 동작]
+
+Beat 2 (2-7s): [Character: Pixar 3D animated [사물], [감정별 톤 키워드]]:
+\\"대사 (구두점 !?!, 적용)\\"
+
+Speaking while [동시 동작]
+
+Beat 3 (7-8s): [끝 포즈]
+
+Camera: [Beat별 카메라]
+Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
+
+★ 신체 부위 캐릭터(BODY): "The [감정] face embedded directly on the [부위] surface"로 시작
+
+반드시 아래 JSON으로만 응답:
+{"vid1":"150~220단어","vid2":"150~220단어","vid3":"150~220단어","vid4":"150~220단어","vid5":"150~220단어"}`;
+  };
+
+  // ═══ v11.3.0: 공용 유틸 ═══
+  const _parseJSON=(raw)=>{
+    // v11.4.0: 균형 잡힌 중괄호 추출
+    const s=raw.indexOf("{");if(s===-1)return null;
+    let d=0,end=-1;for(let i=s;i<raw.length;i++){if(raw[i]==="{")d++;if(raw[i]==="}")d--;if(d===0){end=i;break}}
+    if(end===-1)return null;
+    let sj=raw.substring(s,end+1).replace(/[\r\n]+/g," ").replace(/,\s*([}\]])/g,"$1").replace(/[\x00-\x1f]/g," ").replace(/\s{2,}/g," ");
+    try{return JSON.parse(sj)}catch(e){
+      const data={};
+      const allFields=["title","desc","hashtags","tags","hook","hook_line1","hook_line2","mood","char1","char2","char3","char4","char5","tts1","tts2","tts3","tts4","tts5","img1","img2","img3","img4","img5","img6","img7","img8","img9","img10","img11","img12","vid1","vid2","vid3","vid4","vid5"];
+      for(const f of allFields){const re=new RegExp('"'+f+'"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"');const m=sj.match(re);if(m)data[f]=m[1].replace(/\\"/g,'"')}
+      return Object.keys(data).length>0?data:null;
+    }
+  };
+
+  // ═══ v11.3.0: 채널B 전용 — TTS 검증 (5씬 나열형, 50~65자) ═══
+  // ═══ v11.3.3: | 는 코드 자동 삽입이므로 검증에서 제외 ═══
+  const _validateTTS_B=(d)=>{
+    const MIN=50,MAX=65,fields=["tts1","tts2","tts3","tts4","tts5"],errs=[];
+    for(const f of fields){
+      const len=(d[f]||"").replace(/\|/g,"").length;
+      if(len<MIN)errs.push(f+": "+len+"자 (최소 "+MIN+"자 미달 → 50~65자로 다시 써)");
+      if(len>MAX)errs.push(f+": "+len+"자 (최대 "+MAX+"자 초과 → 50~65자로 다시 써)");
+    }
+    const totalDur=fields.reduce((sum,f)=>sum+calcDuration((d[f]||"").replace(/\|/g,"")),0);
+    if(totalDur>45)errs.push("5씬 합계 예상 "+totalDur+"초 (45초 초과)");
+    return{pass:errs.length===0,errs};
+  };
+
+  // ═══ v10.8: 채널A 대본 생성 (A 전용) ═══
+  // ═══ v11.3.3: 글자수 검증 + 재시도 추가 ═══
+  const _generateScript_A=async(topicText)=>{
+    const trimA=(txt,max)=>{if(!txt)return txt;const clean=txt.replace(/\|/g,"");if(clean.length<=max)return txt;const cut=txt.substring(0,max+Math.floor(txt.length-clean.length));const cleaned=cut.replace(/\d\.\d/g,"X_X");const lp=Math.max(cleaned.lastIndexOf("."),cleaned.lastIndexOf("?"),cleaned.lastIndexOf("!"),cleaned.lastIndexOf("요"),cleaned.lastIndexOf("죠"));const result=lp>20?txt.substring(0,lp+1).trim():cut.trim();return result.length<25?txt.substring(0,max).trim():result};
+    const ttsFields=["tts1","tts2","tts3","tts4"];
+    let data=null;
+    for(let attempt=1;attempt<=3;attempt++){
+      const prompt=attempt===1?_buildScriptPrompt_A(topicText):_buildScriptPrompt_A(topicText)+"\n\n[★ 이전 대본 검증 실패. 수정해:\n"+data._errs.join("\n")+"\n★★★ 모든 tts는 62~70자 범위 필수.]";
+      const scriptRaw=await callClaude(cfg.proxyUrl,cfg.claudeKey,prompt,false);
+      data=_parseJSON(scriptRaw);
+      if(!data||!data.title) throw new Error("대본 JSON 파싱 실패 (시도 "+attempt+")");
+      // 글자수 검증 — v11.4.6: 62~70자 (ElevenLabs 실측 9.2자/초)
+      const errs=[];
+      for(const f of ttsFields){
+        const len=(data[f]||"").replace(/\|/g,"").length;
+        if(len<55)errs.push(f+": "+len+"자 (최소 55자 미달 → 62~70자로 다시 써)");
+        if(len>75)errs.push(f+": "+len+"자 (최대 75자 초과 → 62~70자로 다시 써)");
+      }
+      console.log("📏 채널A TTS 검증 (시도"+attempt+"):",ttsFields.map(f=>(data[f]||"").replace(/\|/g,"").length).join(","),errs.length===0?"✅ PASS":"❌ FAIL "+errs.join(", "));
+      if(errs.length===0)break;
+      if(attempt<3){data._errs=errs;continue}
+      console.warn("⚠️ 채널A TTS 검증 3회 실패 → trimA 75자 하드캡 적용");
+      for(const f of ttsFields)data[f]=trimA(data[f],75);
+    }
+    delete data._errs;
+    for(const f of ttsFields){if(data[f])data[f]=trimA(data[f],75)}
+    // 채널A: img 프롬프트 생성 (호출2)
+    try{
+      const imgRaw=await callClaude(cfg.proxyUrl,cfg.claudeKey,_buildImgPrompt_A(data,topicText),false);
+      const imgData=_parseJSON(imgRaw);
+      if(imgData){for(let i=1;i<=4;i++){if(imgData["img"+i])data["img"+i]=imgData["img"+i]}}
+    }catch(e){console.log("채널A img 프롬프트 실패:",e.message)}
+    // img fallback
+    for(let i=1;i<=4;i++){if(!data["img"+i]||data["img"+i].length<10)data["img"+i]="A cinematic close-up of everyday household objects on a worn wooden countertop in a small Korean apartment. Warm golden light streaming through a window from the left, shallow depth of field. Shot on Sony A7III, 50mm f/1.8, photorealistic, vertical 9:16, no random text no watermarks"}
+    return data;
+  };
+
+  // ═══ v11.3.0: 채널B 대본 생성 (1주제×5사물 나열형) ═══
+  const _generateScript_B=async(topicText)=>{
+    // ★ v11.3.1: | 는 자막 구분자이므로 글자수에서 제외
+    const trimTTS=(txt,max)=>{if(!txt)return txt;const pipeCount=(txt.match(/\|/g)||[]).length;if(txt.replace(/\|/g,"").length<=max)return txt;const cut=txt.substring(0,max+pipeCount);const cleaned=cut.replace(/\d\.\d/g,"X_X");const lp=Math.max(cleaned.lastIndexOf("."),cleaned.lastIndexOf("?"),cleaned.lastIndexOf("!"),cleaned.lastIndexOf("야"),cleaned.lastIndexOf("거든"),cleaned.lastIndexOf("잖아"));const result=lp>20?txt.substring(0,lp+1).trim():cut.trim();return result.length<45?txt.substring(0,max).trim():result};
+    const ttsFields=["tts1","tts2","tts3","tts4","tts5"];
+    let data=null;
+    for(let attempt=1;attempt<=3;attempt++){
+      const prompt=attempt===1?_buildScriptPrompt_B(topicText):_buildScriptPrompt_B(topicText)+"\n\n[★ 이전 대본 검증 실패. 수정해:\n"+data._errs.join("\n")+"\n★★★ 모든 tts는 50~65자 범위 필수.]";
+      const scriptRaw=await callClaude(cfg.proxyUrl,cfg.claudeKey,prompt,false); // v11.3.3: 대본은 주제facts 기반 → 웹검색 불필요
+      data=_parseJSON(scriptRaw);
+      if(!data||!data.title) throw new Error("대본 JSON 파싱 실패 (시도 "+attempt+")");
+      const v=_validateTTS_B(data);
+      console.log("📏 채널B TTS 검증 (시도"+attempt+"):",ttsFields.map(f=>(data[f]||"").replace(/\|/g,"").length).join(","),v.pass?"✅ PASS":"❌ FAIL "+v.errs.join(", "));
+      if(v.pass)break;
+      if(attempt<3){data._errs=v.errs;continue}
+      console.warn("⚠️ 채널B TTS 검증 3회 실패 → trimTTS 65자 하드캡 적용");
+      for(const f of ttsFields) data[f]=trimTTS(data[f],65);
+    }
+    delete data._errs;
+    // v11.3.0: img 프롬프트 생성 (호출2) — 5사물 독립
+    try{
+      const imgRaw=await callClaude(cfg.proxyUrl,cfg.claudeKey,_buildImgPrompt_B(data,topicText),false);
+      const imgData=_parseJSON(imgRaw);
+      if(imgData){for(let i=1;i<=SCENE_COUNT_B;i++){if(imgData["img"+i])data["img"+i]=imgData["img"+i]}}
+    }catch(e){console.log("채널B img 프롬프트 실패:",e.message)}
+    // v11.3.0: vid 프롬프트 생성 (호출3) — 5사물 독립
+    try{
+      const vidRaw=await callClaude(cfg.proxyUrl,cfg.claudeKey,_buildVidPrompt_B(data,topicText),false);
+      const vidData=_parseJSON(vidRaw);
+      if(vidData){for(let i=1;i<=SCENE_COUNT_B;i++){if(vidData["vid"+i])data["vid"+i]=vidData["vid"+i]}}
+    }catch(e){console.log("채널B vid 프롬프트 실패:",e.message)}
+    // img fallback
+    for(let i=1;i<=SCENE_COUNT_B;i++){if(!data["img"+i]||data["img"+i].length<10)data["img"+i]="A Pixar-style 3D animated household object character with expressive cartoon eyes and white gloved hands standing on a clean wooden table in a small Korean apartment. Warm soft natural lighting from a window, vertical 9:16, no random text no watermarks. Hyper-detailed Pixar 3D animation quality, cinematic shallow depth of field."}
+    return data;
+  };
+
+  // ═══ v10.8: 이미지 생성 (공용 — A/B 동일 API) ═══
+  // ═══ v10.9: 양 채널 공통 — Nano Banana 2 T2I ($0.08/장) ═══
+  const _generateImageNB2=async(prompt,aspectRatio)=>{
+    for(let attempt=1;attempt<=3;attempt++){
+      try{
+        const r=await callProxy(cfg.proxyUrl,{action:"generateImageNB2",falApiKey:cfg.falKey,prompt:prompt.trim(),aspectRatio:aspectRatio||"9:16"});
+        if(r.success&&r.imageUrl) return r.imageUrl;
+        throw new Error(r.error||"응답에 imageUrl 없음");
+      }catch(e){if(attempt<3)await new Promise(r=>setTimeout(r,attempt*3000));else throw new Error("NB2 이미지 3회 실패: "+e.message)}
+    }
+  };
+  const _generateImageNB2Edit=async(prompt,refUrls,aspectRatio)=>{
+    for(let attempt=1;attempt<=3;attempt++){
+      try{
+        const r=await callProxy(cfg.proxyUrl,{action:"generateImageNB2Edit",falApiKey:cfg.falKey,prompt:prompt.trim(),imageUrls:Array.isArray(refUrls)?refUrls:[refUrls],aspectRatio:aspectRatio||"9:16"});
+        if(r.success&&r.imageUrl) return r.imageUrl;
+        throw new Error(r.error||"응답에 imageUrl 없음");
+      }catch(e){if(attempt<3)await new Promise(r=>setTimeout(r,attempt*3000));else throw new Error("NB2 Edit 3회 실패: "+e.message)}
+    }
+  };
+
+  // ═══ v11.5.5: 채널B 전용 — Kling 3.0 O3 Standard I2V (비동기 큐 + 폴링) ═══
+  // ★ timeout 60초 (GAS→fal.ai 큐 제출은 보통 2~5초, 최대 60초), 폴링은 연속 실패 5회면 조기 종료
+  const _submitOneVideo=async(imageUrl,vidPrompt,ttsText,sceneIdx)=>{
+    const fullPrompt=(vidPrompt||"");
+    const dur=calcDuration(ttsText);
+    const sceneLabel="영상 "+(sceneIdx!=null?(sceneIdx+1)+"/"+SCENE_COUNT_B:"");
+    console.log("🎬 Kling O3 씬 제출: "+ttsText?.length+"자 → "+dur+"초");
+    const body={action:"submitVideo",falApiKey:cfg.falKey,imageUrl:imageUrl,prompt:fullPrompt,duration:String(dur),generateAudio:true,negativePrompt:"motion blur, face distortion, warping, morphing, inconsistent physics, floating objects, extra limbs, background shifting, slow motion",cfgScale:0.7};
+    const r=await callProxy(cfg.proxyUrl,body,60000); // ★ v11.5.5: 60초 timeout
+    if(r.error) throw new Error(r.error); // ★ callProxy 에러 즉시 throw
+    // ★ 즉시 완료 (드물지만 가능)
+    if(r.success&&r.videoUrl) return r.videoUrl;
+    // ★ v11.5.5: 폴링 10분 (5초×120), 연속 네트워크 에러 5회 → 조기 종료
+    if(r.success&&r.requestId){
+      console.log("📋 request_id: "+r.requestId+" → 폴링 시작");
+      const MAX_POLLS=120; // 5초 × 120 = 10분
+      let consecutiveErrors=0;
+      for(let poll=0;poll<MAX_POLLS;poll++){
+        await new Promise(res=>setTimeout(res,5000));
+        const elapsed=(poll+1)*5;
+        const timeStr=elapsed>=60?Math.floor(elapsed/60)+"분 "+elapsed%60+"초":elapsed+"초";
+        if(sceneIdx!=null) setAutoPhase(sceneLabel+" 대기 중... ("+timeStr+")");
+        try{
+          const check=await callProxy(cfg.proxyUrl,{action:"checkVideo",falApiKey:cfg.falKey,requestId:r.requestId},20000);
+          // ★ v11.5.5: 순서 중요 — 상태 먼저, 에러 나중
+          // 1. 완료 → return
+          if(check.success&&check.videoUrl){
+            consecutiveErrors=0;
+            console.log("✅ 폴링 완료 ("+timeStr+"): "+check.videoUrl?.substring(0,60));
+            return check.videoUrl;
+          }
+          // 2. Kling 렌더 실패 → 재시도 불가, 즉시 throw
+          if(check.status==="FAILED") throw new Error("Kling 렌더 실패 (request_id: "+r.requestId+")");
+          // 3. 정상 진행 중 → 에러 카운터 리셋, 계속 폴링
+          if(check.success&&!check.error){
+            consecutiveErrors=0;
+            if(poll%12===11) console.log("⏳ 폴링 "+timeStr+" ("+r.requestId+")");
+            continue;
+          }
+          // 4. 그 외 에러 (네트워크, 파싱 실패 등) → 카운트
+          consecutiveErrors++;
+          console.log("⚠️ 폴링 에러 "+consecutiveErrors+"/5: "+(check.error||"알 수 없는 에러"));
+          if(consecutiveErrors>=5) throw new Error("폴링 연속 5회 실패 (request_id: "+r.requestId+")");
+        }catch(e){
+          if(e.message.includes("Kling 렌더 실패")||e.message.includes("폴링 연속")) throw e;
+          consecutiveErrors++;
+          console.log("⚠️ 폴링 예외 "+consecutiveErrors+"/5: "+e.message);
+          if(consecutiveErrors>=5) throw new Error("폴링 연속 5회 예외 (request_id: "+r.requestId+")");
+        }
+      }
+      throw new Error("Kling 10분 초과 (request_id: "+r.requestId+" → fal.ai에서 회수 가능)");
+    }
+    throw new Error(r.error||"Kling 영상 생성 실패");
+  };
+
+  // ═══ v10.8: Sheets 전송 (공용 — JSON 빌드만 A/B 분기) ═══
+  // ★ v11.5.0: 채널A hook_line1/hook_line2 분리 + 12이미지
+  const _sendToSheets=async(scriptData,imgUrls,vidUrls)=>{
+    const moodBgms=BGM[scriptData.mood]||BGM.urgent;
+    const bgm=moodBgms[Math.floor(Math.random()*moodBgms.length)];
+    const ttsArr=isA?[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4]:[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4,scriptData.tts5];
+    const json=isA
+      ? buildJSON_A(imgUrls,ttsArr,scriptData.mood,scriptData.hook_line1||scriptData.hook||"",scriptData.hook_line2||"",cfg.voiceIdA||VID_A,bgm)
+      : buildJSON_B(vidUrls,ttsArr,scriptData.mood,scriptData.hook);
+    const charsStr=isA?"":[scriptData.char1,scriptData.char2,scriptData.char3,scriptData.char4,scriptData.char5].filter(Boolean).join(",");
+    const cs=t=>(t||"").replace(/\|/g," ").replace(/\s{2,}/g," ").trim();
+    // ★ v11.5.0: hook열에는 두줄 합침 (Sheets 기록용)
+    const hookForSheet=isA?(scriptData.hook_line1||scriptData.hook||"")+"\n"+(scriptData.hook_line2||""):scriptData.hook;
+    const vals=[today.dateStr,isA?"A":"B",scriptData.title,scriptData.desc,scriptData.hashtags,scriptData.tags,hookForSheet,scriptData.mood,tmpl,cs(scriptData.tts1),cs(scriptData.tts2),cs(scriptData.tts3),cs(scriptData.tts4),imgUrls[0]||"",imgUrls[1]||"",imgUrls[2]||"",imgUrls[3]||"",bgm,isA?"":(vidUrls||[]).join(","),json,"대기","","","",charsStr,isA?"":cs(scriptData.tts5),isA?"":imgUrls[4]||""];
+    const r=await callProxy(cfg.proxyUrl,{action:"writeSheet",sheetId:cfg.sheetId,values:vals});
+    if(!r.success) throw new Error(r.error||"Sheets 전송 실패");
+    addRecentTitle(isA?"A":"B",scriptData.title);
+    return true;
+  };
+
+  // ═══ v10.8: 채널A 주제 검색 (A 전용) ═══
+  // ═══ v11.0: 채널A 주제 검색 — 1개 + 팩트 풀세트 ═══
+  const _genTopics_A=async()=>{
+    const cats={1:{cat:"건강/라이프",ex:"최근 화제된 건강 상식, 생활 습관, 음식, 운동"},2:{cat:"심리/자기계발",ex:"사람들이 궁금해하는 심리 현상, 행동 패턴, 동기부여"},3:{cat:"건강/라이프",ex:"최근 화제된 건강 상식, 수면, 피부, 다이어트"},4:{cat:"심리/자기계발",ex:"직장생활, 인간관계, 습관, 멘탈 관리"},5:{cat:"건강/라이프",ex:"음식, 운동, 생활습관 관련 화제 주제"},6:{cat:"심리/관계",ex:"주말에 가볍게 볼 수 있는 심리, 성격, 연애/관계"},0:{cat:"건강/라이프",ex:"주말 건강 루틴, 수면 습관 관련 화제 주제"}};
+    const c=cats[today.dow]||cats[1];
+    const frRef=(cfg.formatRefA||"").trim();
+    return `당신은 "일상 필수 상식" 채널의 리서처입니다.
+오늘의 카테고리: [${c.cat}]
+
+[★★★ 터지는 주제의 공식]
+호기심 = "이미 아는 것" + "몰랐던 반전"
+시청자가 매일 하는 행동인데 아무도 모르는 사실이 붙어야 "어 진짜?"가 나온다.
+
+★ 이 3개를 전부 통과해야 좋은 주제:
+① 일상성: 한국에서 일상생활하는 사람 누구나 해당되는가?
+② 반전: 상식과 반대이거나 예측을 깨뜨리는가?
+③ 전달성: 카톡 단톡방에 던졌을 때 "야 너 이거 알아?" 반응이 나오는가?
+
+[좋은 주제 vs 나쁜 주제]
+✅ "21일이면 습관 된다는 거 거짓말" → 누구나 해봄(일상) + 66일이 진짜(반전) + 말하고 싶음(전달)
+✅ "에어컨 자동모드가 약풍보다 전기 덜 먹는다" → 매일 씀(일상) + 상식 반대(반전) + 바로 실행(전달)
+✅ "스누즈 누르면 하루 종일 더 피곤해진다" → 매일 함(일상) + 몰랐음(반전) + 행동 바뀜(전달)
+❌ "와이퍼는 여성이 발명했다" → 알아도 행동 안 바뀜 = 교양 상식
+❌ "손 자주 씻어야 한다" → 누구나 아는 뻔한 얘기
+❌ 해외 정책, 국제기구, 특정 직업군만 해당되는 주제
+
+[팩트 찾는 방법]
+- 웹검색 시 "연구" "실험" "수치" 같은 팩트 지향 단어 붙이기
+  ✅ "수면 부족 뇌 연구" "도파민 중독 연구 수치" "습관 형성 실험 결과"
+  ❌ "건강 쇼츠 인기" "심리 트렌드" (메타 키워드 = 쓸모없음)
+- 출처(기관명/논문명/연도) 있는 팩트만 facts에 넣어라
+- 검색에서 안 나온 수치를 만들어내지 마
+
+[facts 구조]
+- 반전: 대부분이 모르는 충격 사실 + 출처 + 수치
+- 상식파괴: 상식의 반대인 포인트
+- 행동팁: 바로 실행 가능한 구체적 행동
+- 수치: 핵심 비교 수치 1개
+
+예시: ${c.ex}
+주의: 이미 다룬 주제 피하기:\n${getRecentTitles("A").slice(0,15).join(", ")||"(없음)"}
+
+[★ hook 규칙] ${SHARED_HOOK_RULE}
+
+★★★ 주제는 반드시 1개만. JSON 객체 {} 1개만 반환. 배열 금지.
+
+반드시 아래 JSON 객체 1개로만 응답:
+{"title":"15자이내","summary":"핵심 1줄 요약","hook":"10자이내,의미완성","keywords":["k1","k2","k3"],"coupang":"쿠팡키워드","facts":{"반전":"대부분이 모르는 충격 사실 + 수치 (2~3문장)","상식파괴":"이거 반대로 알고 있는 사람이 많은 포인트 (1~2문장)","행동팁":"구체적 행동 + 수치 + 시간 (1~2문장)","수치":"핵심 비교 수치 1개 (한 줄)"}}`;
+  };
+
+  // ═══ v11.0: 채널B 주제 검색 — 1개 + 팩트 풀세트 ═══
+  // ═══ v11.4.0: 채널B 메타 (카테고리×각도) ═══
+  const _topicB_meta=()=>{
+    const season=(()=>{const m=new Date().getMonth();if(m>=2&&m<=4)return"봄";if(m>=5&&m<=7)return"여름";if(m>=8&&m<=10)return"가을";return"겨울"})();
+    const B_CATEGORIES=[
+      {cat:"주방",ex:"프라이팬 코팅, 전자레인지, 에어프라이어, 식칼, 도마, 행주, 수세미"},
+      {cat:"음식/식재료",ex:"계란, 바나나, 우유, 김치, 라면, 두부, 달래, 두릅, 고추"},
+      {cat:"가전제품",ex:"세탁기, 냉장고, 에어컨, 드라이기, 선풍기, 공기청정기, 전자레인지"},
+      {cat:"옷/신발/가방",ex:"운동화, 양말, 청바지, 지갑, 패딩, 넥타이, 슬리퍼"},
+      {cat:"수면/침실",ex:"베개, 매트리스, 이불, 커튼, 알람시계, 수면등, 가습기"},
+      {cat:"전자기기",ex:"충전기, 이어폰, 멀티탭, 리모컨, 스마트폰, 노트북, 보조배터리"},
+      {cat:"몸에 닿는 것들",ex:"칫솔, 면도기, 손톱깎이, 빗, 수건, 체중계, 안경"},
+      {cat:"욕실",ex:"비누, 치약, 샤워기, 변기, 거울, 세면대, 욕조"},
+      {cat:"일상 속 위험",ex:"가습기, 전기장판, 멀티탭, 가스레인지, 곰팡이, 보조석 에어백, 라이터"},
+      {cat:"가공식품/음료",ex:"제로콜라, 냉동피자, 컵라면, 캔커피, 에너지드링크, 과자"},
+      {cat:"화장품/뷰티",ex:"선크림, 클렌징폼, 파운데이션, 마스크팩, 립밤, 매니큐어"},
+      {cat:"화분/반려식물",ex:"선인장, 다육이, 화분, 흙, 비료, 물뿌리개, 잔디"},
+      {cat:"자동차/이동수단",ex:"타이어, 와이퍼, 사이드미러, 방향제, 블랙박스, 안전벨트, 자전거"}
+    ];
+    const B_ANGLES=[
+      {angle:"돈/낭비",desc:"비싼 거 vs 싼 거 실제 차이, 안 하면 돈 날리는 것, 알면 절약되는 것"},
+      {angle:"역효과",desc:"좋다고 하는 건데 실제로는 해롭거나 역효과인 것"},
+      {angle:"숨은 기능",desc:"이 물건에 이런 용도/기능이 있었다, 설명서에 안 쓰인 꿀팁"},
+      {angle:"착각/반전",desc:"다들 이렇게 알고 있지만 실제로는 반대인 것"},
+      {angle:"비교",desc:"한국 vs 외국 차이, 옛날 vs 지금, 비싼 것 vs 싼 것"},
+      {angle:"심리/마케팅",desc:"마트/매장에서 이렇게 배치하는 이유, 사고 싶어지게 만드는 트릭"},
+      {angle:"타이밍",desc:"이 시간/순서/타이밍에 하면 효과가 완전히 달라지는 것"}
+    ];
+    const catIdx=Math.floor(Math.random()*B_CATEGORIES.length);
+    const angIdx=Math.floor(Math.random()*B_ANGLES.length);
+    return{cat:B_CATEGORIES[catIdx],angle:B_ANGLES[angIdx],season};
+  };
+
+  // v11.4.0: 안전한 JSON 추출 (균형 중괄호)
+  const extractJSON_safe=(str)=>{
+    let pos=0;
+    while(pos<str.length){
+      const start=str.indexOf("{",pos);
+      if(start===-1)return null;
+      let depth=0;
+      for(let i=start;i<str.length;i++){
+        if(str[i]==="{")depth++;
+        if(str[i]==="}")depth--;
+        if(depth===0){
+          const candidate=str.substring(start,i+1);
+          try{const obj=JSON.parse(candidate);if(obj&&typeof obj==="object")return candidate}catch(e){}
+          pos=start+1; break;
+        }
+      }
+      if(depth!==0)return null;
+    }
+    return null;
+  };
+
+  const _genTopics_B=async()=>{
+    const season=(()=>{const m=new Date().getMonth();if(m>=2&&m<=4)return"봄";if(m>=5&&m<=7)return"여름";if(m>=8&&m<=10)return"가을";return"겨울"})();
+    // v11.2.4: 분야 로테이션 — Claude API가 매번 같은 분야(위생)만 고르는 문제 해결
+    const B_CATEGORIES=[
+      {cat:"주방",ex:"프라이팬 코팅, 전자레인지, 에어프라이어, 식칼, 도마, 행주, 수세미"},
+      {cat:"음식/식재료",ex:"계란, 바나나, 우유, 김치, 라면, 두부, 달래, 두릅, 고추"},
+      {cat:"가전제품",ex:"세탁기, 냉장고, 에어컨, 드라이기, 선풍기, 공기청정기, 전자레인지"},
+      {cat:"옷/신발/가방",ex:"운동화, 양말, 청바지, 지갑, 패딩, 넥타이, 슬리퍼"},
+      {cat:"수면/침실",ex:"베개, 매트리스, 이불, 커튼, 알람시계, 수면등, 가습기"},
+      {cat:"전자기기",ex:"충전기, 이어폰, 멀티탭, 리모컨, 스마트폰, 노트북, 보조배터리"},
+      {cat:"몸에 닿는 것들",ex:"칫솔, 면도기, 손톱깎이, 빗, 수건, 체중계, 안경"},
+      {cat:"욕실",ex:"비누, 치약, 샤워기, 변기, 거울, 세면대, 욕조"},
+      {cat:"일상 속 위험",ex:"가습기, 전기장판, 멀티탭, 가스레인지, 곰팡이, 보조석 에어백, 라이터"},
+      {cat:"가공식품/음료",ex:"제로콜라, 냉동피자, 컵라면, 캔커피, 에너지드링크, 과자"},
+      {cat:"화장품/뷰티",ex:"선크림, 클렌징폼, 파운데이션, 마스크팩, 립밤, 매니큐어"},
+      {cat:"화분/반려식물",ex:"선인장, 다육이, 화분, 흙, 비료, 물뿌리개, 잔디"},
+      {cat:"자동차/이동수단",ex:"타이어, 와이퍼, 사이드미러, 방향제, 블랙박스, 안전벨트, 자전거"}
+    ];
+    // v11.3.3: 각도 로테이션 — 같은 카테고리라도 다른 시각
+    const B_ANGLES=[
+      {angle:"돈/낭비",desc:"비싼 거 vs 싼 거 실제 차이, 안 하면 돈 날리는 것, 알면 절약되는 것"},
+      {angle:"역효과",desc:"좋다고 하는 건데 실제로는 해롭거나 역효과인 것"},
+      {angle:"숨은 기능",desc:"이 물건에 이런 용도/기능이 있었다, 설명서에 안 쓰인 꿀팁"},
+      {angle:"착각/반전",desc:"다들 이렇게 알고 있지만 실제로는 반대인 것"},
+      {angle:"비교",desc:"한국 vs 외국 차이, 옛날 vs 지금, 비싼 것 vs 싼 것"},
+      {angle:"심리/마케팅",desc:"마트/매장에서 이렇게 배치하는 이유, 사고 싶어지게 만드는 트릭"},
+      {angle:"타이밍",desc:"이 시간/순서/타이밍에 하면 효과가 완전히 달라지는 것"}
+    ];
+    const catIdx=Math.floor(Math.random()*B_CATEGORIES.length);
+    const angIdx=Math.floor(Math.random()*B_ANGLES.length);
+    const todayCatB=B_CATEGORIES[catIdx];
+    const todayAngle=B_ANGLES[angIdx];
+    return `당신은 "생활 의인화 드라마" 채널의 리서처입니다.
+
+★★★ 오늘의 탐색 분야: [${todayCatB.cat}]
+★★★ 오늘의 각도: [${todayAngle.angle}] — ${todayAngle.desc}
+예시 방향: ${todayCatB.ex}
+
+[★★★ 터지는 주제의 공식]
+호기심 = "이미 아는 것" + "몰랐던 반전"
+시청자가 매일 접하는 사물인데 아무도 모르는 사실이 붙어야 "어 진짜?"가 나온다.
+
+★ 이 3개를 전부 통과해야 좋은 주제:
+① 일상성: 시청자가 매일 만지거나 쓰는 사물인가? (깻잎 ✅, 소화기 ❌)
+② 반전: 상식과 반대이거나 예측을 깨뜨리는가? ("한국만 먹어" ✅, "세균 많다" ❌)
+③ 전달성: 친구한테 "야 너 이거 알아?" 하고 말하고 싶은가?
+
+[좋은 팩트 vs 나쁜 팩트]
+✅ "깻잎은 세계에서 한국인만 먹는다" → 매일 먹는데 몰랐음
+✅ "안 신는 신발이 오히려 더 빨리 망가진다" → 상식과 반대
+✅ "리바이스 CEO는 청바지를 절대 안 빤다" → 의외한 연결
+❌ "와이퍼는 여성 발명가가 만들었다" → 알아도 행동 안 바뀜 = 교양 상식
+❌ "칫솔에 세균이 많다" → 이미 다 아는 뻔한 얘기
+❌ "pH 불균형으로 피부 장벽 손상" → 시청자가 관심 없는 전문 지식
+
+[★ 좋은 주제 예시 — 왜 좋은지 함께 봐라]
+
+예시1) "한국인만 먹는 음식 5가지"
+  [깻잎, 콩나물, 참외, 번데기, 도토리묵]
+  → 매일 먹는 음식(일상) + "세계에서 우리만"(반전) + 말하고 싶음(전달)
+
+예시2) "마트에서 당하고 있는 것들"
+  [우유, 달걀, 과자, 할인스티커, 카트]
+  → 매주 가는 마트(일상) + "동선 설계 때문"(반전) + 확인해봄(전달)
+
+예시3) "옷장에 넣어두면 벌어지는 일"
+  [운동화, 청바지, 가죽가방, 패딩, 양말]
+  → 누구나 옷장 있음(일상) + "안 신어도 썩는다"(반전) + 옷장 열어봄(전달)
+
+[character 규칙]
+- 손으로 만질 수 있는 독립된 사물 1~2단어. 한국인 누구나 아는 쉬운 이름.
+- 5개가 각각 완전히 다른 사물.
+
+[팩트 규칙]
+- 반드시 사실. 확실하지 않으면 수치 빼고 행동/원리만.
+- 뻔한 건강/위생 팩트("세균 많다", "교체주기") 금지.
+
+[★ hook 규칙] ${SHARED_HOOK_RULE}
+- 제목 ${SHARED_TITLE_RULE}
+- 계절 이슈 (현재 ${season})와 결합하면 더 좋음
+
+이 분야에서 흥미로운 팩트들을 찾고, 하나의 큰 주제로 묶어줘.
+주의: 이미 다룬 주제 피하기:\n${getRecentTitles("B").slice(0,15).join(", ")||"(없음)"}
+
+★★★ 주제는 반드시 1개만. JSON 객체 {} 1개만 반환. 배열 금지.
+
+반드시 아래 JSON 객체 1개로만 응답:
+{"title":"15자이내(큰주제)","type":"충격팩트|잘못된습관|해결책꿀팁","summary":"핵심 1줄 요약","hook":"10자이내","keywords":["k1","k2"],"items":[{"character":"사물1","fact":"흥미로운 팩트(1~2문장)"},{"character":"사물2","fact":"흥미로운 팩트"},{"character":"사물3","fact":"흥미로운 팩트"},{"character":"사물4","fact":"흥미로운 팩트"},{"character":"사물5","fact":"가장 강한 반전 팩트"}]}`;
+  };
+
+  // ═══ v11.3.3: 채널B 주제 의미 검증 API (개별 item 판정) ═══
+
+  // ═══ v11.4.0: 채널B 2단계 분리 ═══
+  const _genTopics_B_step1=async()=>{
+    const{cat,angle,season}=_topicB_meta();
+    return `이 분야에서 "1주제 × 5사물 나열형" 쇼츠의 큰 주제 후보 3개를 제안해라.
+
+분야: [${cat.cat}] (예: ${cat.ex})
+각도: [${angle.angle}] — ${angle.desc}
+
+★★★ 핵심: 주제는 "여러 사물을 묶는 큰 우산"이어야 한다.
+특정 사물 1개에 대한 주제가 아니라, 5개 사물이 들어갈 수 있는 넓은 주제.
+
+[좋은 큰 주제]
+✅ "한국인만 먹는 음식 5가지" — 깻잎, 콩나물, 참외 등 5개가 들어감
+✅ "옷장에 넣어두면 벌어지는 일" — 운동화, 청바지, 패딩 등 5개가 들어감
+✅ "마트에서 당하고 있는 것들" — 우유, 달걀, 카트 등 5개가 들어감
+
+[나쁜 주제 — 사물 1개에 묶이면 안 됨]
+❌ "칫솔 3개월마다 바꾸면 바보" — 칫솔 1개 주제
+❌ "면도날 한 번 쓰고 버리는 이유" — 면도날 1개 주제
+❌ "에어컨 자동모드의 비밀" — 에어컨 1개 주제
+
+[호기심 공식]
+① 일상성: 매일 접하는 분야인가?
+② 반전: 상식과 반대인가?
+③ 전달성: "야 너 이거 알아?" 하고 말하고 싶은가?
+
+★ 제목에 특정 사물 이름 넣지 마. 사물/팩트 아직 쓰지 마. 제목+아이디어만.
+계절: ${season}
+이미 다룬 주제: ${getRecentTitles("B").slice(0,15).join(", ")||"(없음)"}
+
+JSON 배열로 응답:
+[{"title":"15자이내","idea":"왜 재밌는지 1줄"},{"title":"15자이내","idea":"1줄"},{"title":"15자이내","idea":"1줄"}]`;
+  };
+
+  const _genTopics_B_step2=async(selectedTitle,selectedIdea)=>{
+    return `이 주제로 쇼츠 콘텐츠를 완성해라.
+
+주제: "${selectedTitle}"
+핵심: ${selectedIdea}
+
+[사물 5개 기준]
+- 시청자가 매일 만지거나 쓰는 일상 사물만
+- 5개가 각각 완전히 다른 사물. 손으로 만질 수 있는 1~2단어.
+- 뻔한 건강/위생("세균 많다") 금지.
+
+[★ hook 규칙] ${SHARED_HOOK_RULE}
+- 제목 ${SHARED_TITLE_RULE}
+
+반드시 아래 JSON 객체 1개로만 응답:
+{"title":"${selectedTitle} #shorts","type":"충격팩트|잘못된습관|해결책꿀팁","summary":"핵심 1줄 요약","hook":"10자이내","keywords":["k1","k2"],"items":[{"character":"사물1","fact":"흥미로운 팩트(1~2문장)"},{"character":"사물2","fact":"흥미로운 팩트"},{"character":"사물3","fact":"흥미로운 팩트"},{"character":"사물4","fact":"흥미로운 팩트"},{"character":"사물5","fact":"가장 강한 반전 팩트"}]}`;
+  };
+
+  // v11.4.0: 채널B step2 실행 — 후보 클릭 시 호출
+  const expandTopicB=async(candidate)=>{
+    setLoading("주제 완성 중...");setTopicCandidatesB(null);setAutoError("");
+    try{
+      const prompt=await _genTopics_B_step2(candidate.title,candidate.idea);
+      const raw=await callClaude(cfg.proxyUrl,cfg.claudeKey,prompt,false);
+      lastApiTime.current=Date.now();
+      let cleanRaw=raw.replace(/<[^>]*>/g,"").replace(/\n{2,}/g,"\n").replace(/\`\`\`json\\s*/gi,"").replace(/\`\`\`\\s*/g,"").trim();
+      const jsonStr=extractJSON_safe(cleanRaw)||extractJSON_safe(raw);
+      if(jsonStr){
+        try{
+          const obj=JSON.parse(jsonStr);
+          if(obj&&obj.title){
+            const parsed=[obj];
+            topicHistoryB.current.good.push({title:obj.title,chars:(obj.items||[]).map(it=>it.character).join(",")});
+            setTopics(parsed);setStep(1);setLoading("");
+            topicsCacheB.current=parsed;
+            return;
+          }
+        }catch(e){}
+      }
+      setTopicsRaw(raw);setStep(1);setLoading("");
+    }catch(e){setAutoError("에러: "+e.message);setLoading("")}
+  };
+
+  const _verifyTopicB=async(topic)=>{
+    const items=topic.items||[];
+    const verifyPrompt=`유튜브 쇼츠 주제의 품질을 검증해라. 엄격하게 판단.
+
+제목: "${topic.title}"
+items:
+${items.map((it,i)=>(i+1)+". "+it.character+": "+it.fact).join("\n")}
+
+[검증 기준]
+1. 제목-items 논리 일치: 제목이 말하는 범위에 5개 items가 전부 해당하는가?
+2. character 독립성: 각 character가 손으로 만질 수 있는 독립된 사물인가?
+3. 팩트 정확성: 명백히 틀린 주장만 실패. 구체적 %/배수 수치가 있으면 엄격 검증. 수치 없이 행동/현상/원리만 서술한 fact는 상식적이면 통과.
+4. 신선도: 이미 수백 채널이 다룬 식상한 주제인가?
+5. 5개 character가 서로 충분히 다른가?
+
+반드시 아래 JSON으로만 응답:
+{"pass":true/false,"title_ok":true/false,"items":[{"idx":1,"pass":true/false,"reason":"문제시 이유"},{"idx":2,"pass":true/false,"reason":""},{"idx":3,"pass":true/false,"reason":""},{"idx":4,"pass":true/false,"reason":""},{"idx":5,"pass":true/false,"reason":""}],"suggestion":"1줄 수정 제안"}`;
+    const raw=await callClaude(cfg.proxyUrl,cfg.claudeKey,verifyPrompt,false);
+    return _parseJSON(raw);
+  };
+
+  // ═══ v11.3.3: 방식1 — 실패 items만 부분 교체 (웹검색 없음, 저비용) ═══
+  const _fixFailedItems=async(topic,failedItems)=>{
+    const fixPrompt=`아래 주제에서 일부 items가 검증 실패했다. 실패한 items만 교체해라.
+
+제목: "${topic.title}"
+현재 items:
+${(topic.items||[]).map((it,i)=>(i+1)+". "+it.character+": "+it.fact).join("\n")}
+
+실패한 items (교체 필요):
+${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
+
+[규칙]
+- 실패한 items만 새 character+fact로 교체. 성공한 items는 절대 변경 금지.
+- 새 character는 제목 "${topic.title}"의 범위에 논리적으로 해당해야 함.
+- 새 fact는 사실이어야 하고, 기존 items와 다른 각도여야 함.
+- character는 손으로 만질 수 있는 독립 사물. 성분/물질/상태 금지.
+
+반드시 JSON으로만 응답 (교체할 items만):
+{${failedItems.map(f=>'"item'+f.idx+'":{"character":"새사물","fact":"새팩트"}').join(",")}}`;
+    const raw=await callClaude(cfg.proxyUrl,cfg.claudeKey,fixPrompt,false);
+    return _parseJSON(raw);
+  };
+
+  // ═══ v11.0: 주제 검색 디스패처 ═══
+  // ═══ v11.4.0: 채널B = 2단계 분리 (step1→후보3개→클릭→step2) ═══
+  const genTopics=async()=>{
+    setLoading("주제");setTopicsRaw("");setAutoError("");setTopicCandidatesB(null);
+    const rejected=isA?rejectedTopicsA:rejectedTopicsB;
+    if(topics&&topics[0]){
+      const tp=topics[0];
+      if(tp.title&&!rejected.current.includes(tp.title))rejected.current.push(tp.title);
+      if(tp.keywords)tp.keywords.forEach(kw=>{if(!rejected.current.includes(kw))rejected.current.push(kw)});
+    }
+    setTopics(null);
+
+    // ═══ 채널B: 2단계 분리 ═══
+    if(!isA){
+      try{
+        let prompt=await _genTopics_B_step1();
+        if(rejected.current.length>0) prompt+="\n\n★ 이 주제는 피해라: "+rejected.current.join(", ");
+        const raw=await callClaude(cfg.proxyUrl,cfg.claudeKey,prompt,false);
+        lastApiTime.current=Date.now();
+        let cleanRaw=raw.replace(/<[^>]*>/g,"").replace(/\n{2,}/g,"\n").replace(/```json\s*/gi,"").replace(/```\s*/g,"").trim();
+        // 배열 파싱
+        let candidates=null;
+        const arrMatch=cleanRaw.match(/\[[\s\S]*\]/)||raw.match(/\[[\s\S]*\]/);
+        if(arrMatch){try{const arr=JSON.parse(arrMatch[0]);if(Array.isArray(arr)&&arr.length>0&&arr[0].title)candidates=arr}catch(e){}}
+        // 배열 실패 시 객체 시도
+        if(!candidates){
+          const jsonStr=extractJSON_safe(cleanRaw);
+          if(jsonStr){try{const obj=JSON.parse(jsonStr);if(obj.title)candidates=[obj]}catch(e){}}
+        }
+        if(candidates&&candidates.length>0){
+          setTopicCandidatesB(candidates.slice(0,3));setStep(1);setLoading("");
+          return;
+        }
+        setTopicsRaw(raw);setStep(1);setLoading("");
+      }catch(e){setAutoError("에러: "+e.message);setLoading("")}
+      return;
+    }
+
+    // ═══ 채널A: 기존 1단계 플로우 ═══
+    const MAX_RETRIES=isA?1:3;
+    let lastIssues="";
+    try{
+      for(let attempt=1;attempt<=MAX_RETRIES;attempt++){
+        let topicPrompt=isA?await _genTopics_A():await _genTopics_B();
+        if(rejected.current.length>0){
+          topicPrompt+="\n\n★★★ 아래 주제/키워드와 관련된 주제는 절대 다시 찾지 마. 완전히 다른 분야의 주제를 찾아라:\n"+rejected.current.join(", ");
+        }
+        if(lastIssues){
+          topicPrompt+="\n\n★ 이전 주제가 검증 실패: "+lastIssues+"\n다른 주제를 찾아라.";
+        }
+        // v11.3.3: 방식2 — 성공/실패 기록을 프롬프트에 주입
+        if(!isA){
+          const h=topicHistoryB.current;
+          if(h.good.length>0) topicPrompt+="\n\n[최근 성공 주제 — 이 수준으로 만들어라]\n"+h.good.slice(-3).map(g=>"✅ \""+g.title+"\" — "+g.chars).join("\n");
+          if(h.bad.length>0) topicPrompt+="\n\n[최근 실패 주제 — 이런 건 피해라]\n"+h.bad.slice(-3).map(b=>"❌ \""+b.title+"\" — "+b.reason).join("\n");
+        }
+        if(attempt>1) setLoading("주제 (재시도 "+attempt+"/"+MAX_RETRIES+")");
+        // v11.3.3: 채널B 웹검색 OFF, 채널A만 웹검색
+        const useSearch=isA;
+        if(!isA) console.log("🎯 카테고리×각도: 프롬프트에 자동 주입됨 (시도"+attempt+")");
+        const raw=await callClaude(cfg.proxyUrl,cfg.claudeKey,topicPrompt,useSearch);
+        lastApiTime.current=Date.now();
+        let cleanRaw=raw.replace(/<[^>]*>/g,"").replace(/\n{2,}/g,"\n").trim();
+        // v11.4.0: markdown 코드블록 제거 (```json ... ``` 또는 ``` ... ```)
+        cleanRaw=cleanRaw.replace(/```json\s*/gi,"").replace(/```\s*/g,"").trim();
+        console.log("📋 주제 raw (시도"+attempt+"):",cleanRaw.substring(0,500));
+        let parsed=null;
+        // v11.4.0: 균형 잡힌 중괄호로 JSON 추출 (greedy regex 대신)
+        function extractJSON(str){
+          let pos=0;
+          while(pos<str.length){
+            const start=str.indexOf("{",pos);
+            if(start===-1)return null;
+            let depth=0;
+            for(let i=start;i<str.length;i++){
+              if(str[i]==="{")depth++;
+              if(str[i]==="}")depth--;
+              if(depth===0){
+                const candidate=str.substring(start,i+1);
+                try{const obj=JSON.parse(candidate);if(obj&&typeof obj==="object")return candidate}catch(e){}
+                pos=start+1; break;
+              }
+            }
+            if(depth!==0)return null;
+          }
+          return null;
+        }
+        const jsonStr=extractJSON(cleanRaw)||extractJSON(raw);
+        if(jsonStr){
+          try{const obj=JSON.parse(jsonStr);if(obj&&obj.title)parsed=[obj]}catch(e){
+            try{const cleaned=jsonStr.replace(/[\r\n\t]/g," ").replace(/,\s*}/g,"}").replace(/,\s*]/g,"]");const obj2=JSON.parse(cleaned);if(obj2&&obj2.title)parsed=[obj2]}catch(e2){console.warn("⚠️ JSON 파싱 실패:",e2.message)}
+          }
+        }
+        if(!parsed){
+          const arrMatch=(cleanRaw.match(/\[[\s\S]*\]/)||raw.match(/\[[\s\S]*\]/));
+          if(arrMatch){try{const arr=JSON.parse(arrMatch[0]);if(Array.isArray(arr)&&arr[0]?.title)parsed=arr}catch(e){}}
+        }
+        if(!parsed||parsed.length===0){
+          if(attempt===MAX_RETRIES){setTopicsRaw(raw);setStep(1);}
+          continue;
+        }
+        parsed=parsed.slice(0,1);
+        // ═══ v11.3.3: 채널B 의미 검증 + 부분 교체 ═══
+        if(!isA&&parsed[0].items){
+          const chars=parsed[0].items.map(it=>it.character||"");
+          if(new Set(chars).size<5){
+            console.warn("⚠️ character 중복 (시도"+attempt+"):",chars.join(","));
+            lastIssues="character 중복: "+chars.join(",");
+            topicHistoryB.current.bad.push({title:parsed[0].title,reason:"character 중복"});
+            if(parsed[0].title)rejected.current.push(parsed[0].title);
+            if(attempt<MAX_RETRIES)continue;
+          }
+          try{
+            setLoading("주제 검증 중...");
+            const vr=await _verifyTopicB(parsed[0]);
+            if(vr&&vr.pass===false){
+              // 개별 item 실패 목록 추출
+              const failedItems=(vr.items||[]).filter(it=>!it.pass);
+              const failedCount=failedItems.length;
+              console.warn("⚠️ 의미 검증: "+failedCount+"/5 실패 (시도"+attempt+"):",failedItems.map(f=>"item"+f.idx+":"+f.reason).join(" | "));
+              // 방식2: 실패 기록
+              topicHistoryB.current.bad.push({title:parsed[0].title,reason:(vr.items||[]).filter(it=>!it.pass).map(f=>f.reason).join(", ").substring(0,80)});
+              // 방식1: 실패 items가 2개 이하 + 제목 OK → 부분 교체 시도
+              if(failedCount<=2&&vr.title_ok!==false){
+                console.log("🔧 부분 교체 시도: "+failedCount+"개 item 교체");
+                setLoading("주제 부분 수정 중...");
+                try{
+                  const fixData=await _fixFailedItems(parsed[0],failedItems);
+                  if(fixData){
+                    let fixed=false;
+                    failedItems.forEach(f=>{
+                      const key="item"+f.idx;
+                      if(fixData[key]&&fixData[key].character&&fixData[key].fact){
+                        parsed[0].items[f.idx-1]={character:fixData[key].character,fact:fixData[key].fact};
+                        fixed=true;
+                        console.log("✅ item"+f.idx+" 교체: "+fixData[key].character);
+                      }
+                    });
+                    if(fixed){
+                      console.log("✅ 부분 교체 완료 → 검증 통과 처리");
+                      topicHistoryB.current.good.push({title:parsed[0].title,chars:parsed[0].items.map(it=>it.character).join(",")});
+                      setTopics(parsed);setStep(1);setLoading("");
+                      topicsCacheB.current=parsed;
+                      return;
+                    }
+                  }
+                }catch(e){console.log("⚠️ 부분 교체 실패:",e.message)}
+              }
+              // 부분 교체 불가 (3개 이상 실패 or 제목 불량) → 전체 재시도
+              lastIssues=failedItems.map(f=>f.reason).join(", ").substring(0,100);
+              if(parsed[0].title)rejected.current.push(parsed[0].title);
+              if(attempt<MAX_RETRIES)continue;
+              setAutoError("⚠️ 주제 검증 경고: "+lastIssues+" — 주제 재검색 권장");
+            } else {
+              console.log("✅ 의미 검증 통과 (시도"+attempt+")");
+              // 방식2: 성공 기록
+              topicHistoryB.current.good.push({title:parsed[0].title,chars:parsed[0].items.map(it=>it.character).join(",")});
+            }
+          }catch(e){console.log("⚠️ 의미 검증 스킵:",e.message)}
+        }
+        setTopics(parsed);setStep(1);setLoading("");
+        if(isA) topicsCacheA.current=parsed; else topicsCacheB.current=parsed;
+        return;
+      }
+    }catch(e){alert("에러: "+e.message)}
+    setLoading("");
+  };
+
+  // ═══ v10.8: 단계별 실행 — 각 단계에서 멈추고 확인 후 다음 진행 ═══
+  // ═══ v11.4.1: autoRun — 풀세트 붙여넣기 (img/vid 있으면 API 0회) ═══
+  const autoRun=async(topicText)=>{
+    if(!configured){alert("설정에서 API 키를 먼저 입력하세요");return}
+    setPicked(topicText);setAutoError("");setScript(null);setImages(Array(isA?12:SCENE_COUNT_B).fill(null));setVideoUrls(Array(isA?4:SCENE_COUNT_B).fill(null));setSent(false);
+
+    // 붙여넣기 JSON 파싱
+    let inputData=null;
+    try{inputData=JSON.parse(topicText)}catch(e){}
+
+    // tts1이 있으면 = 대본이 이미 포함됨
+    if(inputData&&inputData.tts1){
+      try{
+        let data={...inputData};
+        const hasImg=!!(data.img1&&data.img1.length>10);
+        const hasVid=!isA&&!!(data.vid1&&data.vid1.length>10);
+        const sceneCount=isA?4:SCENE_COUNT_B;
+        const imgCount=isA?12:SCENE_COUNT_B; // ★ v11.5.0: 채널A 12장
+        // ★ v11.5.5: 채널A는 Storybook 수동 업로드 → img 프롬프트 불필요, 채널B만 API 호출
+        if(!hasImg){
+          if(!isA){
+            setAutoPhase("이미지 프롬프트 생성");
+            const imgRaw=await callClaude(cfg.proxyUrl,cfg.claudeKey,_buildImgPrompt_B(data,topicText),false);
+            const imgData=_parseJSON(imgRaw);
+            if(imgData){for(let i=1;i<=imgCount;i++){if(imgData["img"+i])data["img"+i]=imgData["img"+i]}}
+          }
+        }else{console.log("✅ img 프롬프트 포함됨 → API 스킵")}
+        // ★ v11.4.1: vid 프롬프트가 없을 때만 API 호출 (채널B만)
+        if(!isA&&!hasVid){
+          setAutoPhase("영상 프롬프트 생성");
+          const vidRaw=await callClaude(cfg.proxyUrl,cfg.claudeKey,_buildVidPrompt_B(data,topicText),false);
+          const vidData=_parseJSON(vidRaw);
+          if(vidData){for(let i=1;i<=sceneCount;i++){if(vidData["vid"+i])data["vid"+i]=vidData["vid"+i]}}
+        }else if(!isA){console.log("✅ vid 프롬프트 포함됨 → API 스킵")}
+        // img fallback (채널B만 — 채널A는 Storybook 수동 업로드)
+        if(!isA){
+          const fallbackImg="A Pixar-style 3D animated household object character with expressive cartoon eyes and white gloved hands standing on a clean wooden table in a small Korean apartment. Warm soft natural lighting from a window, vertical 9:16, no random text no watermarks. Hyper-detailed Pixar 3D animation quality, cinematic shallow depth of field.";
+          for(let i=1;i<=imgCount;i++){if(!data["img"+i]||data["img"+i].length<10)data["img"+i]=fallbackImg}
+        }
+        lastApiTime.current=Date.now();
+        const apiCalls=(!hasImg?1:0)+(!isA&&!hasVid?1:0);
+        console.log("📊 붙여넣기 모드: API "+apiCalls+"회 호출"+(apiCalls===0?" (풀세트 모드)":""));
+        setScript(data);setStep(2);setAutoPhase("대본완료");
+      }catch(e){setAutoPhase("에러");setAutoError("프롬프트 처리 실패: "+e.message)}
+      return;
+    }
+
+    // 기존 플로우 (대본 생성 포함)
+    setAutoPhase("대본");
+    try{
+      const scriptData=isA?await _generateScript_A(topicText):await _generateScript_B(topicText);
+      lastApiTime.current=Date.now();
+      setScript(scriptData);setStep(2);setAutoPhase("대본완료");
+    }catch(e){setAutoPhase("에러");setAutoError("대본 실패: "+e.message)}
+  };
+
+  // ★ v11.5.5: 이미지 생성 — 채널B 전용 (채널A는 Storybook 📁 업로드)
+  const runImages=async()=>{
+    if(!script)return;
+    if(isA){showToast("채널A는 📁 이미지 업로드를 사용하세요");return}
+    setAutoError("");
+    const count=SCENE_COUNT_B;
+    const ar="9:16";
+    const imgUrls=Array(count).fill(null);
+    setAutoPhase("이미지 "+count+"장 동시 생성 중...");
+    const results=await Promise.allSettled(
+      Array.from({length:count},(_,i)=>i).map(async i=>{
+        imgUrls[i]=await _generateImageNB2(script["img"+(i+1)],ar);
+      })
+    );
+    setImages([...imgUrls]);
+    const fails=results.map((r,i)=>r.status==="rejected"?(i+1):null).filter(Boolean);
+    if(fails.length>0){setAutoPhase("에러");setAutoError("이미지 "+fails.join(",")+" 실패 — 개별 재생성으로 복구");return}
+    setStep(3);setAutoPhase("이미지완료");
+  };
+
+  // ★ v11.5.5: 순차 제출 유지 + callProxy timeout + 폴링 에러 감지 수정
+  const runVideos=async()=>{
+    if(!script||!images.every(u=>u))return;setAutoError("");
+    setAutoPhase("Backend 연결 확인...");
+    const ping=await callProxy(cfg.proxyUrl,{action:"ping"});
+    if(!ping.success){setAutoPhase("에러");setAutoError("Backend 연결 실패 — 페이지 새로고침 후 재시도");return}
+    const count=SCENE_COUNT_B;
+    const vUrls=[...videoUrls];
+    const failures=[];
+    for(let i=0;i<count;i++){
+      if(vUrls[i]){console.log("⏭️ 씬"+(i+1)+" 이미 완료, 건너뜀");continue}
+      setAutoPhase("영상 "+(i+1)+"/"+count+" 생성 중...");
+      try{
+        const ttsField=script["tts"+(i+1)];
+        const vidUrl=await _submitOneVideo(images[i],script["vid"+(i+1)],ttsField,i);
+        vUrls[i]=vidUrl;setVideoUrls([...vUrls]);
+        console.log("✅ 씬"+(i+1)+" 완료: "+vidUrl?.substring(0,60));
+      }catch(e){
+        failures.push((i+1));
+        console.log("❌ 씬"+(i+1)+" 실패: "+e.message);
+        vUrls[i]=null;setVideoUrls([...vUrls]);
+      }
+    }
+    if(failures.length>0){
+      setAutoPhase("에러");
+      setAutoError("씬 "+failures.join(",")+" 실패 — 🔄 개별 재생성으로 복구");
+    }else{
+      setAutoPhase("영상완료");
+    }
+  };
+
+  const runSend=async()=>{
+    if(!script)return;setAutoPhase("전송");setAutoError("");
+    try{await _sendToSheets(script,images,videoUrls);setSent(true);setStep(4);setAutoPhase("완료");showToast("✅ 전송 완료!")}
+    catch(e){setAutoPhase("에러");setAutoError("전송 실패: "+e.message)}
+  };
+
+  // ★ v11.5.5: 개별 이미지 재생성 — 채널B만 NB2, 채널A는 📁 업로드 안내
+  const regenSingleImage=async(idx)=>{
+    if(!script||isRunning)return;
+    if(isA){showToast("채널A는 📁 이미지 업로드를 사용하세요");return}
+    const prompt=script["img"+(idx+1)];
+    if(!prompt){showToast("img"+(idx+1)+" 프롬프트 없음");return}
+    setAutoPhase("이미지 "+(idx+1)+" 재생성");setAutoError("");
+    try{
+      const url=await _generateImageNB2(prompt,"9:16");
+      const newImgs=[...images];newImgs[idx]=url;setImages(newImgs);
+      showToast("✅ IMG"+(idx+1)+" 재생성 완료");
+      setAutoPhase(step>=3?"이미지완료":"대본완료");
+    }catch(e){setAutoPhase("에러");setAutoError("IMG"+(idx+1)+" 재생성 실패: "+e.message)}
+  };
+
+  const regenSingleVideo=async(idx)=>{
+    if(!script||!images[idx]||isRunning)return;
+    const vidPrompt=script["vid"+(idx+1)];
+    const ttsField=script["tts"+(idx+1)];
+    if(!vidPrompt){showToast("vid"+(idx+1)+" 프롬프트 없음");return}
+    setAutoPhase("영상 "+(idx+1)+" 재생성");setAutoError("");
+    try{
+      const url=await _submitOneVideo(images[idx],vidPrompt,ttsField,idx);
+      const newVids=[...videoUrls];newVids[idx]=url;setVideoUrls(newVids);
+      showToast("✅ VID"+(idx+1)+" 재생성 완료");
+      setAutoPhase("영상완료");
+    }catch(e){setAutoPhase("에러");setAutoError("VID"+(idx+1)+" 재생성 실패: "+e.message)}
+  };
+
+  // ★ v11.5.2: 📁 채널A 이미지 업로드 (Storybook → imgbb → 이미지 슬롯)
+  const uploadImagesA=()=>{
+    if(!isA||isRunning)return;
+    const input=document.createElement("input");
+    input.type="file";input.accept="image/*";input.multiple=true;
+    input.onchange=async(ev)=>{
+      const files=Array.from(ev.target.files||[]);
+      if(!files.length)return;
+      if(!cfg.imgbbKey){showToast("❌ 설정에서 imgbb API 키를 입력하세요");return}
+      setAutoPhase("이미지 업로드 중 (0/"+files.length+")");setAutoError("");
+      const newImgs=[...images];
+      for(let i=0;i<files.length&&i<12;i++){
+        try{
+          const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error("파일 읽기 실패"));r.readAsDataURL(files[i])});
+          const resp=await callProxy(cfg.proxyUrl,{action:"uploadImage",base64:b64,fileName:files[i].name,imgbbKey:cfg.imgbbKey});
+          if(resp.success&&resp.imageUrl){newImgs[i]=resp.imageUrl;setImages([...newImgs]);setAutoPhase("이미지 업로드 중 ("+(i+1)+"/"+files.length+")")}
+          else{showToast("❌ IMG"+(i+1)+": "+(resp.error||"업로드 실패"))}
+        }catch(e){showToast("❌ IMG"+(i+1)+": "+e.message)}
+      }
+      setImages([...newImgs]);
+      if(newImgs.filter(u=>u).length>0)setAutoPhase("이미지완료");
+      else setAutoPhase("대본완료");
+    };
+    input.click();
+  };
+
+
+  // ── Derived state ──
+  const isRunning=autoPhase&&!["완료","에러","대본완료","이미지완료","영상완료"].includes(autoPhase);
+  const doneScript=!!script;
+  const doneImgCount=images.filter(u=>u).length;
+  const doneVidCount=videoUrls.filter(u=>u).length;
+  const doneSend=sent;
+
+  return(
+    <div className="pad">
+      {cfg.formatRefDate&&(
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",background:refStale?"#ff444410":"#4ade8010",borderRadius:8,marginBottom:10,fontSize:11}}>
+          <span style={{color:refStale?"#ff6b6b":"#4ade80"}}>📊 포맷 레퍼런스: {cfg.formatRefDate}{refStale?" (업데이트 필요)":""}</span>
+          <span style={{color:"#555"}}>스카우팅 탭에서 관리</span>
+        </div>
+      )}
+
+      {/* ═══ 슬롯 바: A / B ═══ */}
+      <div className="slot-bar">
+        <button className={"slot-btn"+(slot==="A"?" active":"")} onClick={()=>resetSlot("A")} disabled={isRunning}>
+          <span className="ch-a">채널A</span> 트렌드<small>{scheduleTime!=="—"&&slot==="A"?scheduleTime:SCHEDULE_A[today.isWeekday?"weekday":"weekend"]}</small>
+        </button>
+        <button className={"slot-btn"+(slot==="B"?" active":"")+((today.hasBSlot||cfg.testMode)?"":" disabled-slot")} onClick={()=>resetSlot("B")} disabled={isRunning||(!today.hasBSlot&&!cfg.testMode)}>
+          <span className="ch-b">채널B</span> {(today.hasBSlot||cfg.testMode)?"의인화드라마":"오늘 없음"}<small>{(today.hasBSlot||cfg.testMode)?(SCHEDULE_B[today.dow]||"테스트"):"화/목/토"}</small>
+        </button>
+      </div>
+
+      {/* 채널+템플릿 정보 */}
+      <div className="box">
+        <div className="info-row">
+          <div><span className={isA?"ch-a":"ch-b"} style={{fontWeight:800}}>{isA?"채널A 트렌드":"채널B 의인화드라마"}</span><span style={{color:"#555",margin:"0 8px"}}>·</span><span style={{color:"#aaa",fontWeight:600}}>{displayTmpl(tmpl,isA)}</span></div>
+          <div style={{fontSize:11,color:"#666"}}>{isA?"정지이미지+TTS":"Kling영상×5 나열형"}</div>
+        </div>
+      </div>
+
+      {/* ═══ STEP 1: 주제+대본 붙여넣기 ═══ */}
+      <div className="box">
+        <div className="step-hdr">
+          <div className={"step-label"+(step>=1?" done":"")}>① 주제+대본 {step>=1&&"✓"}</div>
+        </div>
+        {!script&&(
+          <div>
+            <div style={{fontSize:11,color:"#818cf8",marginBottom:6}}>💡 풀세트 JSON 붙여넣기 (tts+img+vid 포함 시 API 0회)</div>
+            <textarea className="input-area" value={picked} onChange={e=>setPicked(e.target.value)} placeholder='{"title":"...", "hook_line1":"...", "hook_line2":"...", "tts1":"...", "img1":"...", ...img12}' rows={5} style={{fontFamily:"monospace",fontSize:11,resize:"vertical"}}/>
+            <button className="btn btn-purple" onClick={()=>{if(picked.trim())autoRun(picked.trim())}} disabled={!picked.trim()||isRunning} style={{marginTop:8,width:"100%"}}>🚀 시작</button>
+          </div>
+        )}
+      </div>
+
+      {/* ═══ AUTO-RUN PROGRESS ═══ */}
+      {autoPhase&&(
+        <div className="auto-progress">
+          <div className="ap-title">{autoPhase==="완료"?"✅ 완료":autoPhase==="에러"?"⚠️ 오류":["대본완료","이미지완료","영상완료"].includes(autoPhase)?"⏸ 확인 후 다음 단계":"⚡ 실행 중..."}</div>
+          <div className="ap-steps">
+            <div className={"ap-step"+(doneScript?" done":autoPhase==="대본"?" active":"")}/>
+            <div className={"ap-step"+(doneImgCount===(isA?12:SCENE_COUNT_B)?" done":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?" active":"")}/>
+            {!isA&&<div className={"ap-step"+(doneVidCount===SCENE_COUNT_B?" done":(autoPhase.includes("영상")&&autoPhase!=="영상완료")?" active":"")}/>}
+            <div className={"ap-step"+(doneSend?" done":autoPhase==="전송"?" active":autoPhase==="에러"?" error":"")}/>
+          </div>
+          <div className={"ap-status"+(autoPhase==="에러"?" error":"")}>
+            {autoPhase==="대본"&&"✍️ 대본 생성 중..."}
+            {(autoPhase==="이미지 프롬프트 생성"||autoPhase==="영상 프롬프트 생성")&&"🔧 "+autoPhase+"..."}
+            {autoPhase==="대본완료"&&(isA?"✅ 대본 완료 — 📁 Storybook 이미지 업로드":"✅ 대본 완료 — 아래에서 확인 후 이미지 생성")}
+            {(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")&&"🎨 "+autoPhase}
+            {autoPhase==="이미지완료"&&(isA?"✅ 이미지 완료 — 확인 후 전송":"✅ 이미지 완료 — 확인 후 영상 생성")}
+            {(autoPhase.includes("영상")&&autoPhase!=="영상완료")&&"🎬 "+autoPhase}
+            {autoPhase==="영상완료"&&"✅ 영상 완료 — 확인 후 전송"}
+            {autoPhase==="전송"&&"📤 Sheets 전송 중..."}
+            {autoPhase==="완료"&&(isA?"대본→이미지→전송 완료!":"대본→이미지→영상→전송 완료!")}
+            {autoPhase==="에러"&&autoError}
+          </div>
+          {/* 단계별 확인 버튼 */}
+          {autoPhase==="대본완료"&&(
+            <div style={{marginTop:8,display:"flex",gap:6}}>
+              <button className="btn btn-dark" onClick={()=>{if(picked)autoRun(picked)}} style={{flex:1}}>🔄 대본 재생성</button>
+              {isA?<button className="btn btn-green" onClick={uploadImagesA} style={{flex:1}}>📁 이미지 업로드</button>
+                   :<button className="btn btn-purple" onClick={runImages} style={{flex:1}}>🎨 이미지 생성 →</button>}
+            </div>
+          )}
+          {autoPhase==="이미지완료"&&(
+            <div style={{marginTop:8,display:"flex",gap:6}}>
+              {isA?<button className="btn btn-dark" onClick={uploadImagesA} style={{flex:1}}>📁 이미지 재업로드</button>
+                   :<button className="btn btn-dark" onClick={runImages} style={{flex:1}}>🔄 이미지 재생성</button>}
+              {isA?(
+                <button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
+              ):(
+                <button className="btn btn-purple" onClick={runVideos} style={{flex:1}}>🎬 영상 생성 →</button>
+              )}
+            </div>
+          )}
+          {autoPhase==="영상완료"&&(
+            <div style={{marginTop:8,display:"flex",gap:6}}>
+              <button className="btn btn-dark" onClick={runVideos} style={{flex:1}}>🔄 영상 재생성</button>
+              <button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
+            </div>
+          )}
+          {autoPhase==="에러"&&(
+            <div style={{marginTop:8,display:"flex",gap:6}}>
+              <button className="btn btn-dark" onClick={()=>setShowManual(true)} style={{flex:1}}>수동 모드</button>
+              {autoError.includes("전송 실패")&&script?(
+                <button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송만 재시도</button>
+              ):(
+                <button className="btn btn-red" onClick={()=>{if(picked)autoRun(picked)}} style={{flex:1}}>재시도</button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══ 결과 표시 ═══ */}
+      {script&&(
+        <div className={isDesktop?"wf-result-grid":""}>
+          <div className="box">
+            <div className="step-hdr"><div className="step-label done">② 대본 ✓</div></div>
+            <div style={{background:"#0a0a10",borderRadius:8,padding:10,fontSize:12}}>
+              <div className="script-grid">
+                <span className="lbl">제목</span><span className="val">{script.title}</span>
+                {isA&&(script.hook_line1||script.hook_line2)?<>
+                  <span className="lbl">상단1</span><span style={{color:"#FFFFFF",fontWeight:800}}>{script.hook_line1||""}</span>
+                  <span className="lbl">상단2</span><span style={{color:"#FFD700",fontWeight:800}}>{script.hook_line2||""}</span>
+                </>:<>
+                  <span className="lbl">HOOK</span><span style={{color:(MOOD_CFG[script.mood]||{}).hook||"#fff",fontWeight:800}}>{script.hook||""}</span>
+                </>}
+                <span className="lbl">MOOD</span><span style={{color:(MOOD_CFG[script.mood]||{}).hook||"#fff"}}>{script.mood}</span>
+                {/* v11.3.0: 5사물 캐릭터 표시 */}
+                {!isA&&script.char1&&<><span className="lbl">캐릭터</span><span className="val" style={{color:"#4ade80"}}>{[script.char1,script.char2,script.char3,script.char4,script.char5].filter(Boolean).join(" · ")}</span></>}
+              </div>
+              <div style={{borderTop:"1px solid #1a1a28",marginTop:8,paddingTop:8}}>
+                {/* v11.3.0: 채널B 5씬 + 캐릭터명, 채널A 4씬 */}
+                {Array.from({length:isA?4:SCENE_COUNT_B},(_,i)=>"tts"+(i+1)).map((k,i)=>(
+                  <div key={k} className="scene-item">
+                    <span className="scene-num">씬{i+1}{!isA&&script["char"+(i+1)]&&<span style={{color:"#4ade80",marginLeft:4,fontSize:10}}>({script["char"+(i+1)]})</span>}</span>
+                    <span className="scene-txt">{(script[k]||"").replace(/\|/g," ")}<span style={{color:"#555",marginLeft:4,fontSize:10}}>{(script[k]||"").replace(/\|/g,"").length}자</span></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {images.some(u=>u)&&(
+            <div className="box">
+              <div className="step-hdr"><div className={"step-label"+(images.every(u=>u)?" done":"")}>③ 이미지 {doneImgCount}/{isA?12:SCENE_COUNT_B} {images.every(u=>u)&&"✓"}</div></div>
+              <div className={"img-grid"+(isA?" grid-a":"")}>
+                {Array.from({length:isA?12:SCENE_COUNT_B},(_,i)=>i).map(i=>(
+                  <div key={i} className={"img-cell"+(isA?" ratio-1":"")}>
+                    {images[i]?<img src={images[i]} alt={"IMG"+(i+1)} onClick={()=>setModalImg(images[i])}/>:<div className={"img-placeholder"+(isA?" ratio-1":"")}>{"IMG"+(i+1)}</div>}
+                    {!isA&&images[i]&&(
+                      <div className={"vid-badge"+(videoUrls[i]?" done":" pending")} style={{cursor:"pointer"}} onClick={()=>!isRunning&&videoUrls[i]&&window.open(videoUrls[i],"_blank")}>
+                        {videoUrls[i]?"🎬완료":"⏳대기"}
+                      </div>
+                    )}
+                    <div className="img-btns">
+                      {script&&script["img"+(i+1)]&&<button onClick={()=>{cp(script["img"+(i+1)]);showToast("IMG"+(i+1)+" 프롬프트 복사")}}>📋</button>}
+                      {images[i]&&!isRunning&&<button onClick={()=>regenSingleImage(i)} title={"IMG"+(i+1)+" 재생성"}>🔄</button>}
+                      {!isA&&videoUrls[i]&&!isRunning&&<button onClick={()=>regenSingleVideo(i)} title={"VID"+(i+1)+" 재생성"}>🎬</button>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {sent&&(
+        <div className="box">
+          <div className="step-hdr"><div className="step-label done">{isA?"④":"⑤"} Sheets 전송 ✓</div></div>
+          <div className="sent-msg">{isA?"이미지+TTS → Creatomate 렌더링 대기":"Kling 영상 → Creatomate 합치기 대기"}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══ SCOUTING (v9.2 동일 구조) ═══
+function ScoutingView({today,cfg,saveCfg,showToast}){
+  const[step,setStep]=useState(1);
+  const[dataA,setDataA]=useState("");const[dataB,setDataB]=useState("");
+  const[prompt,setPrompt]=useState("");const[refA,setRefA]=useState("");const[refB,setRefB]=useState("");
+  const[histOpen,setHistOpen]=useState(false);
+  const history=ls("scout_history")||[];
+  const buildPrompt=()=>{
+    let p="아래는 이번 주 Playboard에서 수집한 쇼츠 데이터입니다. 분석해주세요.\n\n";
+    if(dataA.trim()) p+="[채널A 데이터 — 사회시사/건강/심리]\n"+dataA.trim()+"\n\n";
+    if(dataB.trim()) p+="[채널B 데이터 — 꿀팁]\n"+dataB.trim()+"\n\n";
+    p+="분석 항목:\n1. 채널A 상위 영상 공통점 (후킹, 구조, 톤)\n2. 채널B 상위 영상 공통점\n3. 이번 주 키워드 트렌드\n4. 주제유형 분석 (브랜드해부/일상행동해부/뉴스팩트/비교형)\n";
+    p+="5. 관제탑 formatRef 압축본:\n\n[채널A]\n■ 후킹 공식: (1줄)\n■ 영상 구조: (1줄)\n■ 비주얼 트렌드: (1줄)\n■ 금주 핫키워드: k1/k2/k3\n■ 금주 히트 주제유형: (상위2개)\n■ 히트 대상: (3~5개)\n\n[채널B]\n■ 꿀팁 소개 공식: (1줄)\n■ 가격/CTA 타이밍: (1줄)\n■ 비주얼 트렌드: (1줄)\n■ 금주 핫키워드: k1/k2/k3\n■ 금주 히트 주제유형: (상위2개)\n■ 히트 대상: (3~5개)";
+    return p;
+  };
+  const genPrompt=()=>{if(!dataA.trim()&&!dataB.trim()){showToast("데이터를 먼저 입력하세요");return}setPrompt(buildPrompt());setStep(2)};
+  const saveRef=()=>{const u={...cfg};if(refA.trim())u.formatRefA=refA.trim();if(refB.trim())u.formatRefB=refB.trim();u.formatRefDate=today.dateStr;saveCfg(u);const entry={date:today.dateStr,refA:refA.trim(),refB:refB.trim()};ls("scout_history",[entry,...history].slice(0,12));showToast("✅ 저장 완료!")};
+  return(
+    <div className="sc-pad">
+      <div className="sc-step-bar">
+        {[{n:1,l:"① 수집"},{n:2,l:"② 분석/저장"}].map(s=>(
+          <div key={s.n} className={"sc-step-pill"+(step===s.n?" active":step>s.n?" done":"")} onClick={()=>{if(s.n<=step||s.n===step+1)setStep(s.n)}}>{s.l}</div>
+        ))}
+      </div>
+      {step===1&&(<div>
+        <div className="sc-card">
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:15,fontWeight:800,color:"#ddd"}}>Playboard 스카우팅</div>
+            <a href="https://playboard.co" target="_blank" className="sc-link">🔍 Playboard</a>
+          </div>
+          <label className="sc-label"><span style={{color:"#ff6b6b"}}>●</span> 채널A — 사회시사/건강/심리</label>
+          <textarea className="sc-textarea" value={dataA} onChange={e=>setDataA(e.target.value)} rows={6} placeholder={"검색어: 사회이슈, 건강, 심리, MBTI\n상위 5~10개 영상 제목+조회수+채널명 복사"}/>
+          <div style={{height:12}}/>
+          <label className="sc-label"><span style={{color:"#4ade80"}}>●</span> 채널B — 꿀팁</label>
+          <textarea className="sc-textarea" value={dataB} onChange={e=>setDataB(e.target.value)} rows={6} placeholder={"검색어: 꿀팁, 살림\n상위 5~10개 영상 제목+조회수+채널명 복사"}/>
+        </div>
+        <button className="btn btn-red" onClick={genPrompt} disabled={!dataA.trim()&&!dataB.trim()} style={{marginTop:4}}>프롬프트 생성 →</button>
+      </div>)}
+      {step===2&&(<div>
+        <div className="sc-card">
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:15,fontWeight:800,color:"#ddd"}}>Claude 프롬프트</div>
+            <button className="btn btn-blue" onClick={()=>{cp(prompt);showToast("📋 복사됨!")}} style={{width:"auto",padding:"8px 16px",fontSize:12}}>📋 복사</button>
+          </div>
+          <div className="sc-prompt-box">{prompt}</div>
+        </div>
+        <div className="sc-divider"/>
+        <div className="sc-card">
+          <div style={{fontSize:15,fontWeight:800,color:"#ddd",marginBottom:4}}>formatRef 저장</div>
+          <label className="sc-label"><span style={{color:"#ff6b6b"}}>●</span> 채널A</label>
+          <textarea className="sc-textarea" value={refA} onChange={e=>setRefA(e.target.value)} rows={5} placeholder={"■ 후킹 공식: ...\n■ 영상 구조: ...\n■ 비주얼 트렌드: ..."}/>
+          <div style={{height:10}}/>
+          <label className="sc-label"><span style={{color:"#4ade80"}}>●</span> 채널B</label>
+          <textarea className="sc-textarea" value={refB} onChange={e=>setRefB(e.target.value)} rows={5} placeholder={"■ 꿀팁 소개 공식: ...\n■ 가격/CTA 타이밍: ...\n■ 비주얼 트렌드: ..."}/>
+          <button className="btn btn-green" onClick={saveRef} disabled={!refA.trim()&&!refB.trim()} style={{marginTop:10}}>💾 formatRef 저장</button>
+        </div>
+      </div>)}
+      <div style={{marginTop:20}}>
+        <div onClick={()=>setHistOpen(!histOpen)} style={{display:"flex",justifyContent:"space-between",cursor:"pointer",padding:"8px 0"}}>
+          <span style={{fontSize:13,fontWeight:700,color:"#666"}}>{histOpen?"▾":"▸"} 히스토리 ({history.length})</span>
+        </div>
+        {histOpen&&history.map((h,i)=>(
+          <div key={i} className="sc-hist" onClick={()=>{setRefA(h.refA||"");setRefB(h.refB||"");showToast("불러옴!")}}>
+            <span style={{fontSize:12,fontWeight:700,color:"#aaa"}}>{h.date}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══ REPORT (v9.2 동일) ═══
+function ReportView({cfg,showToast}){
+  const[data,setData]=useState(null);const[loading,setLoading]=useState(false);const[err,setErr]=useState("");const[view,setView]=useState("overview");
+  const fetchReport=async()=>{if(!cfg.proxyUrl){setErr("Apps Script URL 필요");return}setLoading(true);setErr("");try{const r=await callProxy(cfg.proxyUrl,{action:"getReport"});if(r&&!r.error)setData(r);else setErr(r?.error||"데이터 없음")}catch(e){setErr(e.message)}setLoading(false)};
+  useEffect(()=>{if(cfg.proxyUrl)fetchReport()},[]);
+  const fmt=n=>{if(n>=1000000)return(n/1000000).toFixed(1)+"M";if(n>=1000)return(n/1000).toFixed(1)+"K";return n};
+  if(!cfg.proxyUrl)return(<div className="pad" style={{textAlign:"center",padding:40,color:"#555"}}><div style={{fontSize:24}}>📊</div><div style={{fontSize:14,fontWeight:700,color:"#888"}}>리포트</div><div style={{fontSize:12}}>설정 → Apps Script URL 연결 후</div></div>);
+  return(
+    <div className="pad">
+      <div style={{display:"flex",gap:4,marginBottom:12}}>
+        {[{k:"overview",l:"개요"},{k:"videos",l:"영상별"},{k:"trends",l:"트렌드"}].map(t=>(
+          <button key={t.k} onClick={()=>setView(t.k)} style={{flex:1,padding:"8px 0",borderRadius:8,border:view===t.k?"1px solid #ff4444":"1px solid #222",background:view===t.k?"#ff444415":"transparent",color:view===t.k?"#ff6b6b":"#555",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{t.l}</button>
+        ))}
+      </div>
+      {loading&&<div style={{textAlign:"center",padding:30,color:"#555"}}>📡 로딩 중...</div>}
+      {err&&<div style={{padding:12,background:"#ff444410",borderRadius:8,fontSize:12,color:"#ff6b6b",textAlign:"center"}}>{err}</div>}
+      {data&&view==="overview"&&(
+        <div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+            {["A","B"].map(ch=>{const s=data.summary[ch]||{views:0,likes:0,videos:0,subs:0};return(
+              <div key={ch} className="box"><div style={{fontSize:13,fontWeight:800,color:ch==="A"?"#ff6b6b":"#4ade80",marginBottom:8}}>채널{ch}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                  <div><div style={{fontSize:18,fontWeight:800,color:"#eee"}}>{fmt(s.views)}</div><div style={{fontSize:10,color:"#555"}}>조회수</div></div>
+                  <div><div style={{fontSize:18,fontWeight:800,color:"#eee"}}>{fmt(s.likes)}</div><div style={{fontSize:10,color:"#555"}}>좋아요</div></div>
+                  <div><div style={{fontSize:18,fontWeight:800,color:"#eee"}}>{s.videos}</div><div style={{fontSize:10,color:"#555"}}>영상</div></div>
+                  <div><div style={{fontSize:18,fontWeight:800,color:"#eee"}}>+{s.subs}</div><div style={{fontSize:10,color:"#555"}}>구독↑</div></div>
+                </div>
+              </div>
+            )})}
+          </div>
+        </div>
+      )}
+      <button className="btn btn-dark" onClick={fetchReport} style={{marginTop:10}}>{loading?"로딩...":"↻ 새로고침"}</button>
+    </div>
+  );
+}
+
+// ═══ DASHBOARD ═══
+function DashboardView({today,cfg}){
+  const[status,setStatus]=useState(null);const[loading,setLoading]=useState(false);
+  const fetch2=async()=>{if(!cfg.proxyUrl||!cfg.sheetId)return;setLoading(true);try{const r=await callProxy(cfg.proxyUrl,{action:"readStatus",sheetId:cfg.sheetId,date:today.dateStr});if(r.success)setStatus(r)}catch(e){}setLoading(false)};
+  useEffect(()=>{if(cfg.proxyUrl&&cfg.sheetId)fetch2()},[]);
+  return(
+    <div className="pad">
+      <div className="box">
+        <div style={{fontSize:12,fontWeight:700,color:"#666",marginBottom:8}}>오늘 스케줄</div>
+        <div className="rot-grid">
+          <div className="rot-card" style={{background:"#ff444408",borderColor:"#ff444433"}}>
+            <div style={{fontWeight:800,color:"#ff6b6b",fontSize:14}}>채널A</div>
+            <div style={{fontWeight:800,color:"#ddd",fontSize:16,marginTop:2}}>{displayTmpl(ROT_A[today.dow],true)}</div>
+            <div style={{fontSize:10,color:"#666",marginTop:2}}>{today.isWeekday?SCHEDULE_A.weekday:SCHEDULE_A.weekend}</div>
+          </div>
+          <div className="rot-card" style={{background:(today.hasBSlot||cfg.testMode)?"#4ade8008":"#ffffff03",borderColor:(today.hasBSlot||cfg.testMode)?"#4ade8033":"#1a1a28"}}>
+            <div style={{fontWeight:800,color:(today.hasBSlot||cfg.testMode)?"#4ade80":"#333",fontSize:14}}>채널B{cfg.testMode&&!today.hasBSlot?" 🧪":""}</div>
+            <div style={{fontWeight:800,color:(today.hasBSlot||cfg.testMode)?"#ddd":"#333",fontSize:16,marginTop:2}}>{(today.hasBSlot||cfg.testMode)?"나열형":"오늘 없음"}</div>
+            <div style={{fontSize:10,color:"#666",marginTop:2}}>{(today.hasBSlot||cfg.testMode)?(SCHEDULE_B[today.dow]||"테스트"):"화/목/토"}</div>
+          </div>
+        </div>
+      </div>
+      <div className="stat-grid">
+        <div className="stat-card"><div className="stat-val" style={{color:"#4ade80"}}>{status?.monthly?.completed||0}</div><div className="stat-lbl">이번달 완료</div></div>
+        <div className="stat-card"><div className="stat-val" style={{color:"#eab308"}}>{status?.monthly?.pending||0}</div><div className="stat-lbl">대기 중</div></div>
+        <div className="stat-card"><div className="stat-val" style={{color:"#555"}}>{status?.monthly?.errors||0}</div><div className="stat-lbl">에러</div></div>
+      </div>
+      {status&&status.rows&&status.rows.length>0&&(
+        <div className="box">
+          <div style={{fontSize:12,fontWeight:700,color:"#666",marginBottom:8}}>오늘 현황</div>
+          {status.rows.map((r,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:i<status.rows.length-1?"1px solid #1a1a28":"none"}}>
+              <div><span style={{fontWeight:700,color:r.channel==="A"?"#ff6b6b":"#4ade80",fontSize:12}}>{r.channel}</span><span style={{color:"#999",fontSize:11,marginLeft:8}}>{(r.title||"").slice(0,25)}</span></div>
+              <span style={{fontSize:11,fontWeight:600,color:r.status==="완료"?"#4ade80":r.status==="대기"?"#eab308":"#ff4444"}}>{r.status}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {cfg.proxyUrl?<button className="btn btn-dark" onClick={fetch2} style={{marginTop:6}}>{loading?"...":"↻ 새로고침"}</button>:<div style={{textAlign:"center",padding:20,color:"#555",fontSize:12}}>설정에서 URL 입력</div>}
+    </div>
+  );
+}
+
+// ═══ SETTINGS v10.0 ═══
+function SettingsView({cfg,saveCfg,configured,syncStatus}){
+  const[local,setLocal]=useState(cfg);const[testing,setTesting]=useState(false);const[msg,setMsg]=useState("");
+  const save=()=>{saveCfg(local);setMsg("💾 저장됨!")};
+  const test=async()=>{if(!local.proxyUrl){setMsg("❌ URL 입력");return}setTesting(true);setMsg("");try{const r=await callProxy(local.proxyUrl,{action:"ping"});setMsg(r.success?"✅ "+r.message:"❌ "+JSON.stringify(r))}catch(e){setMsg("❌ "+e.message)}setTesting(false)};
+  return(
+    <div className="pad">
+      <div className="box" style={{borderColor:local.testMode?"#fbbf2444":"#1a1a28",background:local.testMode?"#fbbf2408":"#111118"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:14,fontWeight:700,color:local.testMode?"#fbbf24":"#666"}}>🧪 테스트 모드</div>
+            <div style={{fontSize:11,color:"#555",marginTop:2}}>요일 무관 채널B 실행 가능</div>
+          </div>
+          <button onClick={()=>{const u={...local,testMode:!local.testMode};setLocal(u);saveCfg(u)}} style={{padding:"8px 16px",borderRadius:8,border:local.testMode?"1px solid #fbbf24":"1px solid #333",background:local.testMode?"#fbbf2420":"transparent",color:local.testMode?"#fbbf24":"#555",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{local.testMode?"ON":"OFF"}</button>
+        </div>
+      </div>
+      <div className="box">
+        <div style={{fontSize:14,fontWeight:700,color:"#ddd",marginBottom:4}}>연결 설정</div>
+        <label className="field-label">Google Apps Script URL *</label>
+        <input className="field-input" value={local.proxyUrl} onChange={e=>setLocal(p=>({...p,proxyUrl:e.target.value}))} placeholder="https://script.google.com/macros/s/xxxxx/exec"/>
+        <label className="field-label">Google Sheets ID *</label>
+        <input className="field-input" value={local.sheetId} onChange={e=>setLocal(p=>({...p,sheetId:e.target.value}))} placeholder="스프레드시트 URL의 /d/와 /edit 사이"/>
+        <label className="field-label">fal.ai API Key *</label>
+        <input className="field-input" value={local.falKey} onChange={e=>setLocal(p=>({...p,falKey:e.target.value}))} placeholder="fal.ai Key" type="password"/>
+        <label className="field-label">Claude API Key *</label>
+        <input className="field-input" value={local.claudeKey} onChange={e=>setLocal(p=>({...p,claudeKey:e.target.value}))} placeholder="sk-ant-api03-..." type="password"/>
+        <label className="field-label">ElevenLabs Voice ID — <span style={{color:"#ff6b6b"}}>채널A</span></label>
+        <input className="field-input" value={local.voiceIdA||""} onChange={e=>setLocal(p=>({...p,voiceIdA:e.target.value}))} placeholder={VID_A+" (기본값)"}/>
+        <label className="field-label">YouTube Data API Key <span style={{color:"#555",fontWeight:400}}>(선택)</span></label>
+        <input className="field-input" value={local.youtubeApiKey||""} onChange={e=>setLocal(p=>({...p,youtubeApiKey:e.target.value}))} placeholder="AIzaSy..." type="password"/>
+        <label className="field-label">imgbb API Key <span style={{color:"#555",fontWeight:400}}>(채널A 이미지 업로드)</span></label>
+        <input className="field-input" value={local.imgbbKey||""} onChange={e=>setLocal(p=>({...p,imgbbKey:e.target.value}))} placeholder="imgbb.com 무료 가입 → API Key" type="password"/>
+        <label className="field-label">포맷 레퍼런스</label>
+        <div style={{fontSize:11,color:"#555",marginTop:4}}>채널A:</div>
+        <textarea className="field-input" value={local.formatRefA||""} onChange={e=>setLocal(p=>({...p,formatRefA:e.target.value}))} rows={3} style={{resize:"vertical",fontFamily:"inherit"}}/>
+        <div style={{fontSize:11,color:"#555",marginTop:4}}>채널B:</div>
+        <textarea className="field-input" value={local.formatRefB||""} onChange={e=>setLocal(p=>({...p,formatRefB:e.target.value}))} rows={3} style={{resize:"vertical",fontFamily:"inherit"}}/>
+        <div style={{display:"flex",gap:8,marginTop:16}}>
+          <button className="btn btn-red" onClick={save} style={{flex:1}}>💾 저장</button>
+          <button className="btn btn-blue" onClick={test} disabled={testing} style={{flex:1}}>{testing?"테스트...":"🔗 연결 테스트"}</button>
+        </div>
+        {msg&&<div style={{marginTop:8,padding:8,background:"#0a0a10",borderRadius:6,fontSize:12,color:msg.startsWith("✅")?"#4ade80":msg.startsWith("💾")?"#fbbf24":"#ff4444",textAlign:"center"}}>{msg}</div>}
+      </div>
+      <div className="box">
+        <div style={{fontSize:12,fontWeight:700,color:"#666",marginBottom:8}}>연결 상태</div>
+        {[{l:"Apps Script",ok:!!local.proxyUrl},{l:"Google Sheets",ok:!!local.sheetId},{l:"fal.ai (NB2 + Kling)",ok:!!local.falKey},{l:"Claude API",ok:!!local.claudeKey},{l:"YouTube API",ok:!!local.youtubeApiKey,opt:true},{l:"imgbb (채널A 업로드)",ok:!!local.imgbbKey,opt:true}].map((s,i)=>(
+          <div key={i} className="status-row"><span style={{color:"#888"}}>{s.l}{s.opt?" (선택)":""}</span><span style={{color:s.ok?"#4ade80":s.opt?"#555":"#ff4444",fontWeight:600}}>{s.ok?"✓ 설정됨":s.opt?"— 미설정":"✕ 미설정"}</span></div>
+        ))}
+      </div>
+      <div className="box">
+        <div style={{fontSize:12,fontWeight:700,color:"#666",marginBottom:8}}>v11.0 비용 요약 (월 추정)</div>
+        <div style={{fontSize:11,color:"#999",lineHeight:1.8}}>
+          채널A: 30편 × 4장 × $0.08 = <span style={{color:"#60a5fa"}}>$9.60</span> (NB2 T2I)<br/>
+          채널B: 13편 × (5장×$0.08 + 5씬×$0.90) = <span style={{color:"#4ade80"}}>$63.70</span> (NB2+Kling)<br/>
+          Claude API: <span style={{color:"#818cf8"}}>~$7</span> / ElevenLabs: <span style={{color:"#fbbf24"}}>$5</span> / Creatomate: $54 / Make: $10.59<br/>
+          <span style={{fontWeight:700,color:"#eee"}}>총 ~$109 (₩150,000)</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App/>,document.getElementById("app"));
+</script>
+</body>
+</html>
