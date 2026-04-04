@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.7.4</title>
+<title>Shorts 관제탑 v11.7.5</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -313,6 +313,50 @@ function toSpeechKorean(txt){
   s=s.replace(/(\d+)\s*(배|도|초|분|시간|만|억|원|퍼센트|그램|리터|센치|밀리|킬로|밀리그램|밀리리터|킬로미터)/g,
     (_,num,unit)=>numToKr(parseInt(num))+" "+unit);
   // 남은 독립 숫자 (단위 없는 것) — 변환하지 않음 (맥락 모호)
+
+  // ★ v11.7.5: Kling 한국어 발음 교정 — 겹받침/연음/경음화 음차 변환
+  // vid 프롬프트 대사에만 적용. tts 자막에는 적용 안 함.
+  // Kling이 정확한 발음 → Whisper가 정확한 한글로 전사 → 자막 오타 감소
+  const P=[
+    // 없- 겹받침
+    ["없어","업써"],["없는","엄는"],["없으","업쓰"],["없다","업따"],["없지","업찌"],["없고","업꼬"],["없을","업쓸"],
+    // 있- 겹받침
+    ["있어","이써"],["있는","인는"],["있으","이쓰"],["있다","이따"],["있잖","이짠"],["있지","이찌"],["있고","이꼬"],["있을","이쓸"],
+    // 좋- 겹받침
+    ["좋아","조아"],["좋은","조은"],["좋다","조타"],["좋지","조치"],["좋고","조코"],["좋을","조을"],
+    // 같- 겹받침
+    ["같이","가치"],["같은","가튼"],["같아","가타"],["같다","갇따"],["같지","갇찌"],
+    // 많- 겹받침
+    ["많은","마는"],["많이","마니"],["많아","마나"],["많다","만타"],["많지","만치"],
+    // 싫- 겹받침
+    ["싫어","시러"],["싫은","시른"],["싫다","실타"],
+    // 않- 겹받침
+    ["않는","안는"],["않아","아나"],["않은","아는"],["않다","안타"],["않지","안치"],
+    // 읽- 겹받침
+    ["읽는","인는"],["읽어","일거"],["읽다","익따"],["읽을","일글"],
+    // 넣- 겹받침
+    ["넣는","넌는"],["넣어","너어"],["넣다","넏따"],["넣을","너을"],
+    // 놓- 종성ㅎ
+    ["놓는","논는"],["놓아","노아"],["놓지","노치"],["놓다","노타"],
+    // 맞- 종성ㅈ
+    ["맞아","마자"],["맞는","만는"],["맞다","맏따"],["맞지","마찌"],["맞을","마즐"],
+    // 낮- 종성ㅈ
+    ["낮은","나즌"],["낮아","나자"],
+    // 높- 종성ㅎ
+    ["높은","노픈"],["높아","노파"],["높다","놉따"],
+    // 쌓- 겹받침
+    ["쌓이","싸이"],["쌓아","싸아"],["쌓는","싼는"],
+    // 잃- 겹받침
+    ["잃어","이러"],["잃는","일는"],["잃다","일타"],
+    // 흔한 연음
+    ["맛있","마싣"],["멋있","머싣"],["못 알","모달"],
+    // 끝 글자 뭉개짐 방지 (테스트 검증 오류)
+    ["토마토","토 마 토"],["아보카도","아보카 도"],
+    // 한자어→쉬운말 (기존 규칙 코드화)
+    ["상온","밖에 놔두면"],["세포벽","살이 녹아서"],["산화","맛이 변해서"],
+  ];
+  for(const[from,to]of P)s=s.split(from).join(to);
+
   return s;
 }
 // ═══ buildJSON — 채널A v2: 멀티이미지 + ABCD모션 + 두줄제목 + 레터박스 ═══
@@ -507,7 +551,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.7.2</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.7.5</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -553,7 +597,7 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   const[autoPhase,setAutoPhase]=useState("");
   const[autoError,setAutoError]=useState("");
   const[showManual,setShowManual]=useState(false);
-  const[renderUrl,setRenderUrl]=useState(""); // ★ v11.7.4: 렌더링 완료 MP4 URL
+  const[renderUrl,setRenderUrl]=useState(""); // ★ v11.7.5: 렌더링 완료 MP4 URL
   const lastApiTime=useRef(0);
   const topicsCacheA=useRef(null);
   const topicsCacheB=useRef(null);
@@ -1247,7 +1291,7 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
 
   // ═══ v10.8: Sheets 전송 (공용 — JSON 빌드만 A/B 분기) ═══
   // ★ v11.5.0: 채널A hook_line1/hook_line2 분리 + 12이미지
-  // ★ v11.7.4: _sendToSheets → Sheets 저장 + Creatomate 렌더링 + 미리보기
+  // ★ v11.7.5: _sendToSheets → Sheets 저장 + Creatomate 렌더링 + 미리보기
   const _sendToSheets=async(scriptData,imgUrls,vidUrls)=>{
     const moodBgms=BGM[scriptData.mood]||BGM.urgent;
     const bgm=moodBgms[Math.floor(Math.random()*moodBgms.length)];
@@ -1259,14 +1303,14 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     const cs=t=>(t||"").replace(/\|/g," ").replace(/\s{2,}/g," ").trim();
     // ★ v11.5.0: hook열에는 두줄 합침 (Sheets 기록용)
     const hookForSheet=isA?(scriptData.hook_line1||scriptData.hook||"")+"\n"+(scriptData.hook_line2||""):scriptData.hook;
-    // ★ v11.7.4: Status를 C열(index 2)로 이동. "렌더중"으로 초기 저장.
+    // ★ v11.7.5: Status를 C열(index 2)로 이동. "렌더중"으로 초기 저장.
     const vals=[today.dateStr,isA?"A":"B","렌더중",scriptData.title,scriptData.desc,scriptData.hashtags,scriptData.tags,hookForSheet,scriptData.mood,tmpl,cs(scriptData.tts1),cs(scriptData.tts2),cs(scriptData.tts3),cs(scriptData.tts4),imgUrls[0]||"",imgUrls[1]||"",imgUrls[2]||"",imgUrls[3]||"",bgm,isA?"":(vidUrls||[]).join(","),json,"","","",charsStr,isA?"":cs(scriptData.tts5),isA?"":imgUrls[4]||""];
     const r=await callProxy(cfg.proxyUrl,{action:"writeSheet",sheetId:cfg.sheetId,values:vals});
     if(!r.success) throw new Error(r.error||"Sheets 전송 실패");
     const sheetRow=r.row; // appendRow가 반환한 행 번호
     addRecentTitle(isA?"A":"B",scriptData.title);
 
-    // ★ v11.7.4: Creatomate 렌더링 제출
+    // ★ v11.7.5: Creatomate 렌더링 제출
     if(!cfg.creatomateKey){
       // Creatomate 키 없으면 기존 방식 (Make.com이 렌더링) — Status를 "대기"로 변경
       try{await callProxy(cfg.proxyUrl,{action:"updateCell",sheetId:cfg.sheetId,row:sheetRow,updates:[{col:3,value:"대기"}]})}catch(ue){}
@@ -1278,7 +1322,7 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     if(!renderRes.success) throw new Error("렌더링 제출 실패: "+(renderRes.error||""));
     const renderId=renderRes.renderId;
 
-    // ★ v11.7.4: Creatomate 폴링 (5초 간격, 최대 60회 = 5분)
+    // ★ v11.7.5: Creatomate 폴링 (5초 간격, 최대 60회 = 5분)
     setAutoPhase("렌더링 중... ("+renderId.substring(0,8)+")");
     for(let attempt=0;attempt<60;attempt++){
       await new Promise(ok=>setTimeout(ok,5000));
@@ -1898,7 +1942,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     }
   };
 
-  // ★ v11.7.4: 전송 + Creatomate 렌더링 + 미리보기
+  // ★ v11.7.5: 전송 + Creatomate 렌더링 + 미리보기
   const runSend=async()=>{
     if(!script)return;setAutoPhase("전송");setAutoError("");setRenderUrl("");
     try{
