@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.7.2</title>
+<title>Shorts 관제탑 v11.7.4</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -459,7 +459,7 @@ function App(){
   const[tab,setTab]=useState("work");
   const[today]=useState(getToday());
   const[cfg,setCfg]=useState(()=>{
-    const defaults={proxyUrl:DEFAULT_PROXY_URL,falKey:"",claudeKey:"",sheetId:DEFAULT_SHEET_ID,voiceIdA:VID_A,youtubeApiKey:"",imgbbKey:"",formatRefA:"",formatRefB:"",formatRefDate:"",testMode:false};
+    const defaults={proxyUrl:DEFAULT_PROXY_URL,falKey:"",claudeKey:"",sheetId:DEFAULT_SHEET_ID,voiceIdA:VID_A,youtubeApiKey:"",imgbbKey:"",creatomateKey:"",formatRefA:"",formatRefB:"",formatRefDate:"",testMode:false};
     const saved=ls("config")||defaults;
     if(!saved.proxyUrl) saved.proxyUrl=DEFAULT_PROXY_URL;
     if(!saved.sheetId) saved.sheetId=DEFAULT_SHEET_ID;
@@ -494,7 +494,7 @@ function App(){
   const saveCfg=useCallback((c)=>{
     setCfg(c);ls("config",c);
     if(c.proxyUrl&&c.sheetId){
-      const syncData={falKey:c.falKey||"",claudeKey:c.claudeKey||"",voiceIdA:c.voiceIdA||"",youtubeApiKey:c.youtubeApiKey||"",imgbbKey:c.imgbbKey||"",formatRefA:c.formatRefA||"",formatRefB:c.formatRefB||"",formatRefDate:c.formatRefDate||""};
+      const syncData={falKey:c.falKey||"",claudeKey:c.claudeKey||"",voiceIdA:c.voiceIdA||"",youtubeApiKey:c.youtubeApiKey||"",imgbbKey:c.imgbbKey||"",creatomateKey:c.creatomateKey||"",formatRefA:c.formatRefA||"",formatRefB:c.formatRefB||"",formatRefDate:c.formatRefDate||""};
       callProxy(c.proxyUrl,{action:"saveConfig",sheetId:c.sheetId,config:syncData}).then(r=>{if(r.success)setSyncStatus("synced")}).catch(()=>{});
     }
   },[]);
@@ -553,6 +553,7 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   const[autoPhase,setAutoPhase]=useState("");
   const[autoError,setAutoError]=useState("");
   const[showManual,setShowManual]=useState(false);
+  const[renderUrl,setRenderUrl]=useState(""); // ★ v11.7.4: 렌더링 완료 MP4 URL
   const lastApiTime=useRef(0);
   const topicsCacheA=useRef(null);
   const topicsCacheB=useRef(null);
@@ -569,7 +570,7 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   // 슬롯 전환
   const resetSlot=(sl)=>{
     if(sl==="B"&&!today.hasBSlot&&!cfg.testMode) return;
-    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setTopicsRaw("");setTopicCandidatesB(null);
+    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);
     rejectedTopicsA.current=[];rejectedTopicsB.current=[];
     const cached=sl==="A"?topicsCacheA.current:topicsCacheB.current;
     if(cached){setTopics(cached);setStep(1)}else{setTopics(null)}
@@ -1246,6 +1247,7 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
 
   // ═══ v10.8: Sheets 전송 (공용 — JSON 빌드만 A/B 분기) ═══
   // ★ v11.5.0: 채널A hook_line1/hook_line2 분리 + 12이미지
+  // ★ v11.7.4: _sendToSheets → Sheets 저장 + Creatomate 렌더링 + 미리보기
   const _sendToSheets=async(scriptData,imgUrls,vidUrls)=>{
     const moodBgms=BGM[scriptData.mood]||BGM.urgent;
     const bgm=moodBgms[Math.floor(Math.random()*moodBgms.length)];
@@ -1257,11 +1259,47 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     const cs=t=>(t||"").replace(/\|/g," ").replace(/\s{2,}/g," ").trim();
     // ★ v11.5.0: hook열에는 두줄 합침 (Sheets 기록용)
     const hookForSheet=isA?(scriptData.hook_line1||scriptData.hook||"")+"\n"+(scriptData.hook_line2||""):scriptData.hook;
-    const vals=[today.dateStr,isA?"A":"B",scriptData.title,scriptData.desc,scriptData.hashtags,scriptData.tags,hookForSheet,scriptData.mood,tmpl,cs(scriptData.tts1),cs(scriptData.tts2),cs(scriptData.tts3),cs(scriptData.tts4),imgUrls[0]||"",imgUrls[1]||"",imgUrls[2]||"",imgUrls[3]||"",bgm,isA?"":(vidUrls||[]).join(","),json,"대기","","","",charsStr,isA?"":cs(scriptData.tts5),isA?"":imgUrls[4]||""];
+    // ★ v11.7.4: Status를 C열(index 2)로 이동. "렌더중"으로 초기 저장.
+    const vals=[today.dateStr,isA?"A":"B","렌더중",scriptData.title,scriptData.desc,scriptData.hashtags,scriptData.tags,hookForSheet,scriptData.mood,tmpl,cs(scriptData.tts1),cs(scriptData.tts2),cs(scriptData.tts3),cs(scriptData.tts4),imgUrls[0]||"",imgUrls[1]||"",imgUrls[2]||"",imgUrls[3]||"",bgm,isA?"":(vidUrls||[]).join(","),json,"","","",charsStr,isA?"":cs(scriptData.tts5),isA?"":imgUrls[4]||""];
     const r=await callProxy(cfg.proxyUrl,{action:"writeSheet",sheetId:cfg.sheetId,values:vals});
     if(!r.success) throw new Error(r.error||"Sheets 전송 실패");
+    const sheetRow=r.row; // appendRow가 반환한 행 번호
     addRecentTitle(isA?"A":"B",scriptData.title);
-    return true;
+
+    // ★ v11.7.4: Creatomate 렌더링 제출
+    if(!cfg.creatomateKey){
+      // Creatomate 키 없으면 기존 방식 (Make.com이 렌더링) — Status를 "대기"로 변경
+      try{await callProxy(cfg.proxyUrl,{action:"updateCell",sheetId:cfg.sheetId,row:sheetRow,updates:[{col:3,value:"대기"}]})}catch(ue){}
+      setAutoPhase("전송완료 (렌더링은 Make.com)");
+      return {rendered:false};
+    }
+    setAutoPhase("렌더링 제출...");
+    const renderRes=await callProxy(cfg.proxyUrl,{action:"submitRender",creatomateKey:cfg.creatomateKey,source:json});
+    if(!renderRes.success) throw new Error("렌더링 제출 실패: "+(renderRes.error||""));
+    const renderId=renderRes.renderId;
+
+    // ★ v11.7.4: Creatomate 폴링 (5초 간격, 최대 60회 = 5분)
+    setAutoPhase("렌더링 중... ("+renderId.substring(0,8)+")");
+    for(let attempt=0;attempt<60;attempt++){
+      await new Promise(ok=>setTimeout(ok,5000));
+      const elapsed=((attempt+1)*5);
+      setAutoPhase("렌더링 중... "+elapsed+"초");
+      try{
+        const check=await callProxy(cfg.proxyUrl,{action:"checkRender",creatomateKey:cfg.creatomateKey,renderId:renderId},30000);
+        if(check.status==="succeeded"&&check.url){
+          // ★ 렌더링 성공 → Sheets 업데이트: C열(3)=대기, W열(23)=MP4 URL
+          try{
+            await callProxy(cfg.proxyUrl,{action:"updateCell",sheetId:cfg.sheetId,row:sheetRow,updates:[{col:3,value:"대기"},{col:23,value:check.url}]});
+          }catch(ue){console.log("Sheets 업데이트 실패:",ue.message)}
+          return {rendered:true,mp4Url:check.url,renderId:renderId};
+        }
+        if(check.status==="failed") throw new Error("렌더링 실패: "+(check.error||""));
+      }catch(pollErr){
+        if(pollErr.message.includes("렌더링 실패")) throw pollErr;
+        // 네트워크 에러 → 재시도
+      }
+    }
+    throw new Error("렌더링 타임아웃 (5분). render_id: "+renderId);
   };
 
   // ═══ v10.8: 채널A 주제 검색 (A 전용) ═══
@@ -1860,9 +1898,21 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     }
   };
 
+  // ★ v11.7.4: 전송 + Creatomate 렌더링 + 미리보기
   const runSend=async()=>{
-    if(!script)return;setAutoPhase("전송");setAutoError("");
-    try{await _sendToSheets(script,images,videoUrls);setSent(true);setStep(4);setAutoPhase("완료");showToast("✅ 전송 완료!")}
+    if(!script)return;setAutoPhase("전송");setAutoError("");setRenderUrl("");
+    try{
+      const result=await _sendToSheets(script,images,videoUrls);
+      setSent(true);setStep(4);
+      if(result&&result.rendered&&result.mp4Url){
+        setRenderUrl(result.mp4Url);
+        setAutoPhase("렌더링 완료!");
+        showToast("✅ 렌더링 완료 — 미리보기 가능!");
+      }else{
+        setAutoPhase("완료");
+        showToast("✅ 전송 완료!");
+      }
+    }
     catch(e){setAutoPhase("에러");setAutoError("전송 실패: "+e.message)}
   };
 
@@ -2083,6 +2133,11 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         <div className="box">
           <div className="step-hdr"><div className="step-label done">{isA?"④":"⑤"} Sheets 전송 ✓</div></div>
           <div className="sent-msg">{isA?"이미지+TTS → Creatomate 렌더링 대기":"Kling 영상 → Creatomate 합치기 대기"}</div>
+          {renderUrl&&<div style={{marginTop:8}}>
+            <div style={{fontSize:11,color:"#4ade80",fontWeight:700,marginBottom:4}}>🎬 렌더링 완료 — 미리보기:</div>
+            <video src={renderUrl} controls style={{width:"100%",borderRadius:8,maxHeight:400}} playsInline/>
+            <div style={{fontSize:10,color:"#555",marginTop:4,wordBreak:"break-all"}}>{renderUrl.substring(0,80)}...</div>
+          </div>}
         </div>
       )}
     </div>
@@ -2122,6 +2177,8 @@ function SettingsView({cfg,saveCfg,configured,syncStatus}){
         <input className="field-input" value={local.youtubeApiKey||""} onChange={e=>setLocal(p=>({...p,youtubeApiKey:e.target.value}))} placeholder="AIzaSy..." type="password"/>
         <label className="field-label">imgbb API Key <span style={{color:"#555",fontWeight:400}}>(채널A 이미지 업로드)</span></label>
         <input className="field-input" value={local.imgbbKey||""} onChange={e=>setLocal(p=>({...p,imgbbKey:e.target.value}))} placeholder="imgbb.com 무료 가입 → API Key" type="password"/>
+        <label className="field-label">Creatomate API Key <span style={{color:"#555",fontWeight:400}}>(렌더링 미리보기)</span></label>
+        <input className="field-input" value={local.creatomateKey||""} onChange={e=>setLocal(p=>({...p,creatomateKey:e.target.value}))} placeholder="Creatomate Dashboard → API Key" type="password"/>
         <div style={{display:"flex",gap:8,marginTop:16}}>
           <button className="btn btn-red" onClick={save} style={{flex:1}}>💾 저장</button>
           <button className="btn btn-blue" onClick={test} disabled={testing} style={{flex:1}}>{testing?"테스트...":"🔗 연결 테스트"}</button>
@@ -2130,7 +2187,7 @@ function SettingsView({cfg,saveCfg,configured,syncStatus}){
       </div>
       <div className="box">
         <div style={{fontSize:12,fontWeight:700,color:"#666",marginBottom:8}}>연결 상태</div>
-        {[{l:"Apps Script",ok:!!local.proxyUrl},{l:"Google Sheets",ok:!!local.sheetId},{l:"fal.ai (NB2 + Kling)",ok:!!local.falKey},{l:"Claude API",ok:!!local.claudeKey},{l:"YouTube API",ok:!!local.youtubeApiKey,opt:true},{l:"imgbb (채널A 업로드)",ok:!!local.imgbbKey,opt:true}].map((s,i)=>(
+        {[{l:"Apps Script",ok:!!local.proxyUrl},{l:"Google Sheets",ok:!!local.sheetId},{l:"fal.ai (NB2 + Kling)",ok:!!local.falKey},{l:"Claude API",ok:!!local.claudeKey},{l:"Creatomate (렌더링)",ok:!!local.creatomateKey,opt:true},{l:"YouTube API",ok:!!local.youtubeApiKey,opt:true},{l:"imgbb (채널A 업로드)",ok:!!local.imgbbKey,opt:true}].map((s,i)=>(
           <div key={i} className="status-row"><span style={{color:"#888"}}>{s.l}{s.opt?" (선택)":""}</span><span style={{color:s.ok?"#4ade80":s.opt?"#555":"#ff4444",fontWeight:600}}>{s.ok?"✓ 설정됨":s.opt?"— 미설정":"✕ 미설정"}</span></div>
         ))}
       </div>
