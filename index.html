@@ -104,47 +104,76 @@ textarea,input{font-family:inherit}
 @media(min-width:1024px){
 body{max-width:none;padding-bottom:0;background:#06060a}
 .nav{display:none}
-.hdr{max-width:none;padding:14px 40px 10px;background:linear-gradient(180deg,#0c0c14 0%,#08080c 100%);border-bottom:1px solid #1a1a2a}
-.hdr-title{font-size:24px;letter-spacing:-0.5px}
-.hdr-logo{letter-spacing:6px;font-size:10px;color:#555}
-.hdr-date{font-size:13px;color:#888}
-.desk-layout{display:grid;grid-template-columns:1fr;gap:0;max-width:1400px;margin:0 auto}
-.desk-main{min-height:calc(100vh - 60px)}
-.desk-main .pad{padding:24px 40px;max-width:none}
-.desk-main .slot-bar{gap:12px;max-width:600px}
-.desk-main .slot-btn{padding:14px 0;font-size:15px;border-radius:10px;transition:all 0.2s ease}
-.desk-main .slot-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
-.desk-main .wf-result-grid{display:grid;grid-template-columns:minmax(380px,1fr) minmax(400px,1.2fr);gap:28px;align-items:start}
-.desk-main .wf-result-grid .img-grid{grid-template-columns:1fr 1fr 1fr}
-.desk-main .wf-result-grid .img-grid.grid-a{grid-template-columns:repeat(4,1fr)}
-.desk-main .topic-cards-row{display:grid;grid-template-columns:1fr;gap:10px}
-.desk-main .topic-cards-row .topic-card{margin-top:0}
-.section{background:#0a0a12;border:1px solid #16162a;border-radius:12px;padding:20px 24px;margin-bottom:0}
-.section .sec-title{font-size:13px;color:#666;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.section .sec-title::before{content:'';display:inline-block;width:3px;height:14px;background:#8b5cf6;border-radius:2px}
-.ap-steps{gap:6px;margin-bottom:14px}
-.ap-step{height:5px;border-radius:3px;background:#151520;transition:all 0.4s ease}
-.ap-step.done{background:linear-gradient(90deg,#22c55e,#4ade80);box-shadow:0 0 8px rgba(74,222,128,0.3)}
-.ap-step.active{background:linear-gradient(90deg,#ef4444,#f87171);box-shadow:0 0 8px rgba(239,68,68,0.3)}
-.btn{border-radius:10px;font-size:14px;transition:all 0.15s ease}
-.btn:hover{transform:translateY(-1px)}
-.btn-go{background:linear-gradient(135deg,#7c3aed,#6d28d9);box-shadow:0 4px 16px rgba(124,58,237,0.3)}
-.btn-go:hover{box-shadow:0 6px 24px rgba(124,58,237,0.4)}
-.btn-danger{background:linear-gradient(135deg,#dc2626,#b91c1c)}
-.input-area{background:#08080e;border-color:#1a1a2e;border-radius:10px;font-size:13px;transition:border-color 0.2s}
-.input-area:focus{border-color:#7c3aed;outline:none;box-shadow:0 0 0 3px rgba(124,58,237,0.15)}
-.script-grid{gap:6px 12px;font-size:13px}
-.script-grid .val{color:#f0f0f0}
-.img-cell{border-radius:10px;overflow:hidden;border:1px solid #1a1a2a;transition:all 0.2s}
-.img-cell:hover{border-color:#333;transform:scale(1.02)}
-.img-cell img{border-radius:0}
-.stat-grid{grid-template-columns:repeat(4,1fr);gap:10px}
-.stat-card{border-radius:10px;padding:14px;background:#0c0c16;border:1px solid #1a1a2a}
-.desk-cfg-toggle{background:#0c0c16;border:1px solid #1a1a2e;border-radius:10px;color:#888;font-size:12px;padding:8px 18px;cursor:pointer;transition:all 0.2s}
-.desk-cfg-toggle:hover{border-color:#7c3aed;color:#ccc}
-.desk-cfg-panel{position:fixed;top:0;right:0;width:420px;height:100vh;background:#0a0a12;border-left:1px solid #1a1a2a;z-index:150;overflow-y:auto;padding:24px;animation:slideIn 0.25s ease}
-.desk-cfg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:140;backdrop-filter:blur(4px)}
+.hdr{max-width:none;padding:10px 24px 8px;background:#0a0a12;border-bottom:1px solid #1a1a28}
+.hdr-title{font-size:20px}
+.hdr-logo{letter-spacing:5px;font-size:9px;color:#444}
+.desk-layout{max-width:none;margin:0}
+.desk-main{min-height:calc(100vh - 52px)}
+.desk-cfg-toggle{background:#111;border:1px solid #222;border-radius:8px;color:#777;font-size:12px;padding:5px 14px;cursor:pointer}
+.desk-cfg-panel{position:fixed;top:0;right:0;width:400px;height:100vh;background:#0a0a10;border-left:1px solid #1a1a28;z-index:150;overflow-y:auto;padding:20px;animation:slideIn 0.2s ease}
+.desk-cfg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:140;backdrop-filter:blur(3px)}
 @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+/* ═══ Desktop Layout ═══ */
+.dk-body{display:grid;grid-template-columns:210px 1fr;min-height:calc(100vh - 52px)}
+.dk-side{background:#0a0a10;border-right:1px solid #1a1a28;overflow-y:auto}
+.dk-side-sec{padding:14px 16px;border-bottom:1px solid #1a1a28}
+.dk-side-label{font-size:10px;letter-spacing:2px;color:#555;margin-bottom:10px}
+.dk-ch-btn{flex:1;padding:8px 0;border-radius:8px;border:1px solid #222;background:#111;color:#666;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.dk-ch-btn.active-a{border-color:#818cf8;background:#818cf815;color:#818cf8}
+.dk-ch-btn.active-b{border-color:#ef4444;background:#ef444415;color:#ef4444}
+.dk-ch-btn.dis{opacity:0.3;cursor:not-allowed}
+.dk-pipe{position:relative;padding-left:22px}
+.dk-pipe-line{position:absolute;left:7px;top:6px;bottom:6px;width:1.5px;background:#222}
+.dk-pipe-step{position:relative;margin-bottom:14px;display:flex;align-items:flex-start;gap:8px}
+.dk-pipe-step:last-child{margin-bottom:0}
+.dk-dot{width:12px;height:12px;border-radius:50%;border:1.5px solid #333;background:#111;flex-shrink:0;margin-top:3px;position:relative;left:-22px;margin-right:-14px}
+.dk-pipe-step.done .dk-dot{background:#16a34a;border-color:#16a34a}
+.dk-pipe-step.active .dk-dot{background:#ef4444;border-color:#ef4444;box-shadow:0 0 6px #ef444466}
+.dk-pipe-step.error .dk-dot{background:#ef4444;border-color:#ef4444}
+.dk-pipe-name{font-size:13px;font-weight:600;color:#ccc}
+.dk-pipe-step.done .dk-pipe-name{color:#4ade80}
+.dk-pipe-step.active .dk-pipe-name{color:#ef4444}
+.dk-pipe-sub{font-size:11px;color:#555}
+.dk-pipe-step.done .dk-pipe-sub{color:#4ade8088}
+.dk-pipe-step.active .dk-pipe-sub{color:#ef444488}
+.dk-info-row{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:5px}
+.dk-info-row span:first-child{color:#555}
+.dk-act{width:100%;padding:8px;border-radius:8px;border:1px solid #333;background:#151520;color:#aaa;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;margin-bottom:5px}
+.dk-act.go{background:#7c3aed22;border-color:#7c3aed;color:#a78bfa}
+.dk-act.err{background:#ef444422;border-color:#ef4444;color:#f87171}
+/* Main content */
+.dk-main{background:#08080c;overflow-y:auto;max-height:calc(100vh - 52px)}
+.dk-title-bar{padding:10px 24px;border-bottom:1px solid #1a1a28;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dk-hook-a{font-size:12px;padding:3px 10px;border-radius:99px;background:#FFD70018;color:#FFD700;font-weight:700;white-space:nowrap}
+.dk-hook-b{font-size:12px;padding:3px 10px;border-radius:99px;background:#ef444418;color:#ef4444;font-weight:700;white-space:nowrap}
+.dk-tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#111;border:1px solid #222;color:#888}
+.dk-status{padding:8px 24px;font-size:13px;color:#818cf8;background:#818cf808;border-bottom:1px solid #1a1a28}
+.dk-status.err{color:#ef4444;background:#ef444408}
+/* Scene cards */
+.dk-cards{padding:16px 24px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dk-card{background:#0d0d14;border:1px solid #1a1a28;border-radius:10px;overflow:hidden;transition:opacity 0.2s}
+.dk-card.active{border-color:#ef4444;border-width:2px}
+.dk-card.pend{opacity:0.45}
+.dk-card-hdr{padding:8px 12px;border-bottom:1px solid #1a1a28;display:flex;align-items:center;gap:8px}
+.dk-card.active .dk-card-hdr{background:#ef444412}
+.dk-card-num{width:22px;height:22px;border-radius:50%;border:1.5px solid #333;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;font-weight:700;flex-shrink:0}
+.dk-card-num.done{background:#16a34a;border-color:#16a34a;color:#fff}
+.dk-card-num.active{background:#ef4444;border-color:#ef4444;color:#fff}
+.dk-card-ch{font-size:13px;font-weight:600;color:#ddd}
+.dk-card-cnt{margin-left:auto;font-size:11px;color:#555}
+.dk-card-media{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #1a1a28}
+.dk-cell{aspect-ratio:9/16;background:#111118;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;color:#333;font-size:12px}
+.dk-cell:first-child{border-right:1px solid #1a1a28}
+.dk-cell.has{background:#111}
+.dk-cell.gen{background:#ef444410}
+.dk-cell img,.dk-cell video{width:100%;height:100%;object-fit:cover;cursor:pointer}
+.dk-badge{position:absolute;top:5px;left:5px;font-size:9px;padding:2px 7px;border-radius:4px;background:#222;color:#555;font-weight:700}
+.dk-badge.done{background:#16a34a25;color:#4ade80}
+.dk-badge.active{background:#ef444425;color:#f87171}
+.dk-cell-btns{position:absolute;bottom:4px;right:4px;display:flex;gap:2px;opacity:0;transition:opacity 0.15s}
+.dk-cell:hover .dk-cell-btns{opacity:1}
+.dk-cell-btns button{background:#000c;border:none;color:#ccc;font-size:12px;padding:3px 6px;border-radius:4px;cursor:pointer}
+.dk-card-tts{padding:8px 12px;font-size:12px;color:#999;line-height:1.5}
 }
 </style>
 </head>
@@ -2067,6 +2096,99 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   const doneSend=sent;
 
   return(
+    <div>
+    {/* ═══ DESKTOP LAYOUT ═══ */}
+    {isDesktop?(
+    <div className="dk-body">
+      <div className="dk-side">
+        <div className="dk-side-sec">
+          <div className="dk-side-label">CHANNEL</div>
+          <div style={{display:"flex",gap:6}}>
+            <button className={"dk-ch-btn"+(slot==="A"?" active-a":"")} onClick={()=>resetSlot("A")} disabled={isRunning}>A</button>
+            <button className={"dk-ch-btn"+(slot==="B"?" active-b":"")+((today.hasBSlot||cfg.testMode)?"":" dis")} onClick={()=>resetSlot("B")} disabled={isRunning||(!today.hasBSlot&&!cfg.testMode)}>B</button>
+          </div>
+        </div>
+        <div className="dk-side-sec">
+          <div className="dk-side-label">PIPELINE</div>
+          <div className="dk-pipe">
+            <div className="dk-pipe-line"/>
+            <div className={"dk-pipe-step"+(doneScript?" done":autoPhase==="대본"?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">대본</div><div className="dk-pipe-sub">{doneScript?(isA?"4":"5")+"씬 완료":autoPhase==="대본"?"생성 중...":"대기"}</div></div></div>
+            <div className={"dk-pipe-step"+(doneImgCount===(isA?12:SCENE_COUNT_B)?" done":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">{isA?"이미지":"이미지 생성"}</div><div className="dk-pipe-sub">{doneImgCount>0?doneImgCount+"/"+(isA?12:SCENE_COUNT_B):"대기"}</div></div></div>
+            {!isA&&<div className={"dk-pipe-step"+(doneVidCount===SCENE_COUNT_B?" done":(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">영상</div><div className="dk-pipe-sub">{doneVidCount>0?doneVidCount+"/"+SCENE_COUNT_B:"대기"}</div></div></div>}
+            {!isA&&<div className={"dk-pipe-step"+(subConfirmed?" done":autoPhase==="자막 추출 중..."?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">자막</div><div className="dk-pipe-sub">{subConfirmed?"확정":"대기"}</div></div></div>}
+            <div className={"dk-pipe-step"+(doneSend?" done":autoPhase==="전송"?" active":autoPhase==="에러"?" error":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">렌더링+전송</div><div className="dk-pipe-sub">{doneSend?"완료":"대기"}</div></div></div>
+          </div>
+        </div>
+        <div className="dk-side-sec">
+          <div className="dk-side-label">INFO</div>
+          <div className="dk-info-row"><span>채널</span><span>{isA?"A 트렌드":"B 의인화"}</span></div>
+          <div className="dk-info-row"><span>타입</span><span>{displayTmpl(tmpl,isA)}</span></div>
+          <div className="dk-info-row"><span>엔진</span><span>{isA?"TTS+Ken Burns":"Kling O3"}</span></div>
+          {script&&<div className="dk-info-row"><span>Mood</span><span style={{color:(MOOD_CFG[script.mood]||{}).hook||"#fff"}}>{script.mood}</span></div>}
+        </div>
+        {autoPhase&&<div className="dk-side-sec">
+          <div className="dk-side-label">ACTIONS</div>
+          {autoPhase==="대본완료"&&<>{isA?<button className="dk-act go" onClick={uploadImagesA}>이미지 업로드 →</button>:<button className="dk-act go" onClick={runImages}>이미지 생성 →</button>}<button className="dk-act" onClick={()=>{if(picked)autoRun(picked)}}>대본 재생성</button></>}
+          {autoPhase==="이미지완료"&&<>{isA?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act go" onClick={runVideos}>영상 생성 →</button>}{isA?<button className="dk-act" onClick={uploadImagesA}>재업로드</button>:<button className="dk-act" onClick={runImages}>이미지 재생성</button>}</>}
+          {autoPhase==="영상완료"&&<>{(isA||subConfirmed)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runVideos}>영상 재생성</button></>}
+          {autoPhase==="에러"&&<><button className="dk-act err" onClick={()=>{if(picked)autoRun(picked)}}>재시도</button><button className="dk-act" onClick={()=>setShowManual(true)}>수동</button></>}
+        </div>}
+      </div>
+      <div className="dk-main">
+        {script?<div className="dk-title-bar">
+          <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+            <span style={{fontSize:16,fontWeight:700}}>{script.title?.replace(/ #shorts$/,"")}</span>
+            {isA?(script.hook_line2||script.hook_line1)&&<span className="dk-hook-a">{script.hook_line2||script.hook_line1}</span>
+              :<span className="dk-hook-b">{script.hook}</span>}
+          </div>
+          {!isA&&script.char1&&<div style={{display:"flex",gap:4}}>{[script.char1,script.char2,script.char3,script.char4,script.char5].filter(Boolean).map((c,i)=><span key={i} className="dk-tag">{c}</span>)}</div>}
+        </div>:<div className="dk-title-bar"><span style={{fontSize:15,fontWeight:700}}>{isA?"채널A 트렌드":"채널B 의인화드라마"}</span><span style={{fontSize:12,color:"#666"}}>{isA?"정지이미지+TTS":"Kling×"+SCENE_COUNT_B}</span></div>}
+        {autoPhase&&!["대본완료","이미지완료","영상완료","완료"].includes(autoPhase)&&autoPhase!=="에러"&&<div className="dk-status">{autoPhase==="대본"?"✍️ 대본 생성 중...":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?"🎨 "+autoPhase:(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")?"🎬 "+autoPhase:autoPhase==="자막 추출 중..."?"🔤 자막 추출 중...":autoPhase==="전송"?"📤 전송 중...":autoPhase}</div>}
+        {autoPhase==="에러"&&<div className="dk-status err">{autoError}</div>}
+        {!script&&<div style={{padding:"24px 24px"}}>
+          <div style={{fontSize:12,color:"#818cf8",marginBottom:8}}>풀세트 JSON 붙여넣기 (tts+img+vid 포함 시 API 0회)</div>
+          <textarea className="input-area" value={picked} onChange={e=>setPicked(e.target.value)} placeholder='{"title":"...", "tts1":"...", "img1":"...", ...}' rows={6} style={{fontFamily:"monospace",fontSize:12}}/>
+          <button className="btn btn-purple" onClick={()=>{if(picked.trim())autoRun(picked.trim())}} disabled={!picked.trim()||isRunning} style={{marginTop:10,width:"100%",padding:"12px 0",fontSize:14}}>🚀 시작</button>
+        </div>}
+        {script&&<div className="dk-cards">{Array.from({length:isA?4:SCENE_COUNT_B},(_,i)=>i).map(i=>{
+          const tt=(script["tts"+(i+1)]||"").replace(/\|/g," ");
+          const ch=!isA?script["char"+(i+1)]:"";
+          const hi=!!images[i]; const hv=!!videoUrls[i];
+          const va=autoPhase.includes("영상 "+(i+1));
+          return(<div key={i} className={"dk-card"+(va?" active":"")+((!hi&&doneImgCount>0)?" pend":"")}>
+            <div className="dk-card-hdr">
+              <div className={"dk-card-num"+(hi&&(isA||hv)?" done":va?" active":"")}>{i+1}</div>
+              <span className="dk-card-ch">{ch||"씬 "+(i+1)}</span>
+              <span className="dk-card-cnt">{tt.length}자</span>
+            </div>
+            <div className="dk-card-media">
+              <div className={"dk-cell"+(hi?" has":"")}>
+                {hi?<img src={images[i]} alt="" onClick={()=>setModalImg(images[i])}/>:<span>IMG</span>}
+                <div className={"dk-badge"+(hi?" done":"")}>{hi?"IMG":"대기"}</div>
+                {hi&&<div className="dk-cell-btns">{script["img"+(i+1)]&&<button onClick={()=>{cp(script["img"+(i+1)]);showToast("📋")}}>📋</button>}{!isRunning&&<button onClick={()=>regenSingleImage(i)}>🔄</button>}</div>}
+              </div>
+              {isA?<div className={"dk-cell"+(images[i+4]?" has":"")}>
+                {images[i+4]?<img src={images[i+4]} alt="" onClick={()=>setModalImg(images[i+4])}/>:<span>IMG</span>}
+                <div className={"dk-badge"+(images[i+4]?" done":"")}>{images[i+4]?"IMG":"대기"}</div>
+              </div>:<div className={"dk-cell"+(hv?" has":va?" gen":"")}>
+                {hv?<video src={videoUrls[i]} controls preload="none"/>:<span>{va?"생성 중...":"VID"}</span>}
+                <div className={"dk-badge"+(hv?" done":va?" active":"")}>{hv?"VID":va?"GEN":"대기"}</div>
+                {hv&&!isRunning&&<div className="dk-cell-btns"><button onClick={()=>regenSingleVideo(i)}>🎬</button></div>}
+              </div>}
+            </div>
+            <div className="dk-card-tts">{tt}</div>
+          </div>);
+        })}</div>}
+        {autoPhase==="영상완료"&&!isA&&subtitles.length>0&&!subConfirmed&&<div style={{margin:"0 24px 16px",background:"#1a1a2e",border:"1px solid #444",borderRadius:10,padding:14}}>
+          <div style={{fontWeight:700,marginBottom:8,color:"#FFD700",fontSize:14}}>🔤 자막 미리보기</div>
+          {subtitles.map((sc,si)=><div key={si} style={{marginBottom:10}}><div style={{fontSize:12,color:"#aaa",marginBottom:4}}>씬 {si+1}</div>{sc.length===0?<div style={{fontSize:11,color:"#666"}}>자막 없음</div>:<div style={{display:"flex",flexWrap:"wrap",gap:4}}>{sc.map((ch,ci)=><div key={ci} style={{background:"#2a2a3e",borderRadius:4,padding:"4px 8px",display:"flex",alignItems:"center",gap:4}}><input value={ch.text} onChange={e=>{const n=subtitles.map((s,ii)=>ii===si?s.map((c,j)=>j===ci?{...c,text:e.target.value}:c):s);setSubtitles(n)}} style={{background:"transparent",border:"none",borderBottom:"1px solid #555",color:"#fff",fontSize:13,width:Math.max(50,ch.text.length*15)+"px",outline:"none"}}/><span style={{fontSize:9,color:"#666"}}>{ch.start.toFixed(1)}s</span></div>)}</div>}</div>)}
+          <button className="btn" onClick={()=>{setSubConfirmed(true);showToast("✅ 자막 확정!")}} style={{width:"100%",marginTop:8,background:"#FFD700",color:"#000",fontWeight:700}}>✅ 자막 확정</button>
+        </div>}
+        {sent&&renderUrl&&<div style={{margin:"0 24px 16px"}}><div style={{fontSize:12,color:"#4ade80",fontWeight:700,marginBottom:6}}>🎬 렌더링 완료</div><video src={renderUrl} controls style={{width:"100%",borderRadius:10,maxHeight:360}} playsInline/></div>}
+      </div>
+    </div>
+    ):(
+    /* ═══ MOBILE (기존 유지) ═══ */
     <div className="pad">
 
       {/* ═══ 슬롯 바: A / B ═══ */}
@@ -2258,6 +2380,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           </div>}
         </div>
       )}
+    </div>
+    )}
     </div>
   );
 }
