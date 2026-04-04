@@ -102,25 +102,48 @@ textarea,input{font-family:inherit}
 .vid-badge.error{background:#ff444433;color:#ff4444}
 /* Desktop */
 @media(min-width:1024px){
-body{max-width:none;padding-bottom:0}
+body{max-width:none;padding-bottom:0;background:#06060a}
 .nav{display:none}
-.hdr{max-width:none;padding:16px 32px 12px}
-.hdr-title{font-size:22px}
-.hdr-logo{letter-spacing:5px}
-.desk-layout{display:grid;grid-template-columns:1fr;gap:0;max-width:900px;margin:0 auto}
+.hdr{max-width:none;padding:14px 40px 10px;background:linear-gradient(180deg,#0c0c14 0%,#08080c 100%);border-bottom:1px solid #1a1a2a}
+.hdr-title{font-size:24px;letter-spacing:-0.5px}
+.hdr-logo{letter-spacing:6px;font-size:10px;color:#555}
+.hdr-date{font-size:13px;color:#888}
+.desk-layout{display:grid;grid-template-columns:1fr;gap:0;max-width:1400px;margin:0 auto}
 .desk-main{min-height:calc(100vh - 60px)}
-.desk-main .pad{padding:20px 28px;max-width:none}
-.desk-main .slot-bar{gap:10px}
-.desk-main .slot-btn{padding:12px 0;font-size:14px}
+.desk-main .pad{padding:24px 40px;max-width:none}
+.desk-main .slot-bar{gap:12px;max-width:600px}
+.desk-main .slot-btn{padding:14px 0;font-size:15px;border-radius:10px;transition:all 0.2s ease}
+.desk-main .slot-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+.desk-main .wf-result-grid{display:grid;grid-template-columns:minmax(380px,1fr) minmax(400px,1.2fr);gap:28px;align-items:start}
+.desk-main .wf-result-grid .img-grid{grid-template-columns:1fr 1fr 1fr}
+.desk-main .wf-result-grid .img-grid.grid-a{grid-template-columns:repeat(4,1fr)}
 .desk-main .topic-cards-row{display:grid;grid-template-columns:1fr;gap:10px}
 .desk-main .topic-cards-row .topic-card{margin-top:0}
-.desk-main .wf-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
-.desk-main .wf-result-grid .img-grid{grid-template-columns:1fr 1fr}
-.desk-main .wf-result-grid .img-grid.grid-a{grid-template-columns:1fr 1fr 1fr}
-.desk-cfg-toggle{background:none;border:1px solid #222;border-radius:8px;color:#666;font-size:12px;padding:6px 14px;cursor:pointer;transition:all 0.2s}
-.desk-cfg-toggle:hover{border-color:#444;color:#aaa}
-.desk-cfg-panel{position:fixed;top:0;right:0;width:400px;height:100vh;background:#0a0a10;border-left:1px solid #1a1a28;z-index:150;overflow-y:auto;padding:20px;animation:slideIn 0.2s ease}
-.desk-cfg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:140}
+.section{background:#0a0a12;border:1px solid #16162a;border-radius:12px;padding:20px 24px;margin-bottom:0}
+.section .sec-title{font-size:13px;color:#666;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section .sec-title::before{content:'';display:inline-block;width:3px;height:14px;background:#8b5cf6;border-radius:2px}
+.ap-steps{gap:6px;margin-bottom:14px}
+.ap-step{height:5px;border-radius:3px;background:#151520;transition:all 0.4s ease}
+.ap-step.done{background:linear-gradient(90deg,#22c55e,#4ade80);box-shadow:0 0 8px rgba(74,222,128,0.3)}
+.ap-step.active{background:linear-gradient(90deg,#ef4444,#f87171);box-shadow:0 0 8px rgba(239,68,68,0.3)}
+.btn{border-radius:10px;font-size:14px;transition:all 0.15s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn-go{background:linear-gradient(135deg,#7c3aed,#6d28d9);box-shadow:0 4px 16px rgba(124,58,237,0.3)}
+.btn-go:hover{box-shadow:0 6px 24px rgba(124,58,237,0.4)}
+.btn-danger{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+.input-area{background:#08080e;border-color:#1a1a2e;border-radius:10px;font-size:13px;transition:border-color 0.2s}
+.input-area:focus{border-color:#7c3aed;outline:none;box-shadow:0 0 0 3px rgba(124,58,237,0.15)}
+.script-grid{gap:6px 12px;font-size:13px}
+.script-grid .val{color:#f0f0f0}
+.img-cell{border-radius:10px;overflow:hidden;border:1px solid #1a1a2a;transition:all 0.2s}
+.img-cell:hover{border-color:#333;transform:scale(1.02)}
+.img-cell img{border-radius:0}
+.stat-grid{grid-template-columns:repeat(4,1fr);gap:10px}
+.stat-card{border-radius:10px;padding:14px;background:#0c0c16;border:1px solid #1a1a2a}
+.desk-cfg-toggle{background:#0c0c16;border:1px solid #1a1a2e;border-radius:10px;color:#888;font-size:12px;padding:8px 18px;cursor:pointer;transition:all 0.2s}
+.desk-cfg-toggle:hover{border-color:#7c3aed;color:#ccc}
+.desk-cfg-panel{position:fixed;top:0;right:0;width:420px;height:100vh;background:#0a0a12;border-left:1px solid #1a1a2a;z-index:150;overflow-y:auto;padding:24px;animation:slideIn 0.25s ease}
+.desk-cfg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:140;backdrop-filter:blur(4px)}
 @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
 }
 </style>
