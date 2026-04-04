@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.7.5</title>
+<title>Shorts 관제탑 v11.8.0</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -314,7 +314,7 @@ function toSpeechKorean(txt){
     (_,num,unit)=>numToKr(parseInt(num))+" "+unit);
   // 남은 독립 숫자 (단위 없는 것) — 변환하지 않음 (맥락 모호)
 
-  // ★ v11.7.5: Kling 한국어 발음 교정 — 겹받침/연음/경음화 음차 변환
+  // ★ v11.8.0: Kling 한국어 발음 교정 — 겹받침/연음/경음화 음차 변환
   // vid 프롬프트 대사에만 적용. tts 자막에는 적용 안 함.
   // Kling이 정확한 발음 → Whisper가 정확한 한글로 전사 → 자막 오타 감소
   const P=[
@@ -421,39 +421,65 @@ function buildJSON_A(imgs,tts,mood,hookL1,hookL2,vid,bgmOverride){
   ]});
 }
 
-// ═══ buildJSON — 채널B: Kling MP4 영상 이어붙이기 + 자동 자막 오버레이 ═══
-// ★ v11.0.2: BGM 완전 제거 — Kling 네이티브 오디오(대사+효과음+환경음)로 충분
-function buildJSON_B(videoUrls,tts,mood,hook){
+// ═══ ★ v11.8.0: 채널B 자막 사전 추출 — fal.ai Whisper ═══
+async function whisperExtract(proxyUrl,falKey,audioUrl){
+  const r=await callProxy(proxyUrl,{action:"whisperTranscribe",falApiKey:falKey,audioUrl:audioUrl,language:"ko"});
+  if(!r.success) throw new Error(r.error||"Whisper 실패");
+  return r;
+}
+function groupWordsToChunks(words,maxLen){
+  maxLen=maxLen||10;
+  if(!words||words.length===0)return[];
+  const chunks=[];
+  let buf={text:"",start:0,end:0};
+  for(const w of words){
+    const combined=buf.text?buf.text+" "+w.text:w.text;
+    if(buf.text&&combined.replace(/\s/g,"").length>maxLen){
+      chunks.push({...buf});
+      buf={text:w.text,start:w.start,end:w.end};
+    }else{
+      if(!buf.text)buf.start=w.start;
+      buf.text=combined;
+      buf.end=w.end;
+    }
+  }
+  if(buf.text)chunks.push(buf);
+  return chunks;
+}
+
+// ═══ buildJSON — 채널B: Kling MP4 영상 이어붙이기 + 자막 오버레이 ═══
+// ★ v11.8.0: subtitleData 있으면 수동 자막, 없으면 transcript_source 폴백
+function buildJSON_B(videoUrls,tts,mood,hook,subtitleData){
   const m=MOOD_CFG[mood]||MOOD_CFG.urgent;
-  // ★ v11.5.4: transition:true 제거 — 씬 겹침 없이 영상 완전 재생 후 전환 (대사 잘림 방지)
   const transTypes=[null,
     {time:"start",duration:0.2,type:"fade"},
     {time:"start",duration:0.2,type:"fade"},
     {time:"start",duration:0.2,type:"fade"},
     {time:"start",duration:0.2,type:"fade"}
   ];
+  const subStyle={y:"78%",width:"88%",height:"20%",x_alignment:"50%",y_alignment:"50%",
+    fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",
+    font_family:"Noto Sans KR",font_weight:"900",font_size:"6.5 vmin",line_height:"130%"};
   const scenes=Array.from({length:SCENE_COUNT_B},(_,i)=>{
     const vidName="VID-"+(i+1);
-    // ★ v11.4.5: transcript_source 복귀 — Kling 음성을 Whisper가 자동 전사 → 완벽 타이밍 싱크
-    // Kling 한국어 발음 95% 정확 → Whisper 전사도 높은 정확도
-    // Beat1 동작 구간(0~2초)에 말 안 하면 → 자막도 안 나옴 (자동!)
-    // 멀티캐릭터 화자 전환도 → 실제 발화 시점에 자막 표시 (자동!)
-    const comp={type:"composition",track:1,elements:[
-      {name:vidName,type:"video",source:videoUrls[i]||"",width:"100%",height:"100%",fit:"cover",volume:"100%"},
-      // ★ transcript_source: 비디오 음성 → Whisper 자동 전사 → 자막 싱크
-      {type:"text",transcript_source:vidName,transcript_effect:"highlight",transcript_maximum_length:10,
-        y:"78%",width:"88%",height:"20%",x_alignment:"50%",y_alignment:"50%",
-        fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",
-        font_family:"Noto Sans KR",font_weight:"900",font_size:"6.5 vmin",line_height:"130%",
-        transcript_color:"#FFD700"}
-    ]};
+    const els=[{name:vidName,type:"video",source:videoUrls[i]||"",width:"100%",height:"100%",fit:"cover",volume:"100%"}];
+    // ★ v11.8.0: subtitleData 있으면 수동 자막, 없으면 transcript_source 폴백
+    if(subtitleData&&subtitleData[i]&&subtitleData[i].length>0){
+      subtitleData[i].forEach(ch=>{
+        els.push({type:"text",...subStyle,text:ch.text,
+          time:ch.start+" s",duration:Math.max(0.3,ch.end-ch.start)+" s",
+          animations:[{time:"start",duration:"0.1 s",type:"fade"},{time:"end",duration:"0.1 s",type:"fade",reversed:true}]});
+      });
+    }else{
+      els.push({type:"text",transcript_source:vidName,transcript_effect:"highlight",transcript_maximum_length:10,
+        ...subStyle,transcript_color:"#FFD700"});
+    }
+    const comp={type:"composition",track:1,elements:els};
     if(transTypes[i]) comp.animations=[transTypes[i]];
     return comp;
   });
-  // ★ v11.3.0: BGM 없음 — Kling 영상 5개 순차 재생, 총 길이 = 5씬 합산
   return JSON.stringify({output_format:"mp4",width:1080,height:1920,fps:30,fill_color:m.bg||"#000",elements:[
     ...scenes,
-    // Hook
     {type:"text",track:2,text:hook,duration:"3 s",y:"12%",width:"90%",height:"14%",x_alignment:"50%",y_alignment:"50%",
       fill_color:m.hook,stroke_color:"#000000",stroke_width:"1.5 vmin",
       font_family:"Noto Sans KR",font_weight:"900",font_size:"14 vmin",
@@ -551,7 +577,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.7.5</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.8.0</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -597,7 +623,10 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   const[autoPhase,setAutoPhase]=useState("");
   const[autoError,setAutoError]=useState("");
   const[showManual,setShowManual]=useState(false);
-  const[renderUrl,setRenderUrl]=useState(""); // ★ v11.7.5: 렌더링 완료 MP4 URL
+  const[renderUrl,setRenderUrl]=useState(""); // ★ v11.8.0: 렌더링 완료 MP4 URL
+  // ★ v11.8.0: 채널B 자막 미리보기/수정
+  const[subtitles,setSubtitles]=useState([]); // [[씬1청크], [씬2청크], ...]
+  const[subConfirmed,setSubConfirmed]=useState(false);
   const lastApiTime=useRef(0);
   const topicsCacheA=useRef(null);
   const topicsCacheB=useRef(null);
@@ -614,7 +643,7 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   // 슬롯 전환
   const resetSlot=(sl)=>{
     if(sl==="B"&&!today.hasBSlot&&!cfg.testMode) return;
-    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);
+    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);
     rejectedTopicsA.current=[];rejectedTopicsB.current=[];
     const cached=sl==="A"?topicsCacheA.current:topicsCacheB.current;
     if(cached){setTopics(cached);setStep(1)}else{setTopics(null)}
@@ -1291,26 +1320,26 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
 
   // ═══ v10.8: Sheets 전송 (공용 — JSON 빌드만 A/B 분기) ═══
   // ★ v11.5.0: 채널A hook_line1/hook_line2 분리 + 12이미지
-  // ★ v11.7.5: _sendToSheets → Sheets 저장 + Creatomate 렌더링 + 미리보기
+  // ★ v11.8.0: _sendToSheets → Sheets 저장 + Creatomate 렌더링 + 미리보기
   const _sendToSheets=async(scriptData,imgUrls,vidUrls)=>{
     const moodBgms=BGM[scriptData.mood]||BGM.urgent;
     const bgm=moodBgms[Math.floor(Math.random()*moodBgms.length)];
     const ttsArr=isA?[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4]:[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4,scriptData.tts5];
     const json=isA
       ? buildJSON_A(imgUrls,ttsArr,scriptData.mood,scriptData.hook_line1||scriptData.hook||"",scriptData.hook_line2||"",cfg.voiceIdA||VID_A,bgm)
-      : buildJSON_B(vidUrls,ttsArr,scriptData.mood,scriptData.hook);
+      : buildJSON_B(vidUrls,ttsArr,scriptData.mood,scriptData.hook,subtitles);
     const charsStr=isA?"":[scriptData.char1,scriptData.char2,scriptData.char3,scriptData.char4,scriptData.char5].filter(Boolean).join(",");
     const cs=t=>(t||"").replace(/\|/g," ").replace(/\s{2,}/g," ").trim();
     // ★ v11.5.0: hook열에는 두줄 합침 (Sheets 기록용)
     const hookForSheet=isA?(scriptData.hook_line1||scriptData.hook||"")+"\n"+(scriptData.hook_line2||""):scriptData.hook;
-    // ★ v11.7.5: Status를 C열(index 2)로 이동. "렌더중"으로 초기 저장.
+    // ★ v11.8.0: Status를 C열(index 2)로 이동. "렌더중"으로 초기 저장.
     const vals=[today.dateStr,isA?"A":"B","렌더중",scriptData.title,scriptData.desc,scriptData.hashtags,scriptData.tags,hookForSheet,scriptData.mood,tmpl,cs(scriptData.tts1),cs(scriptData.tts2),cs(scriptData.tts3),cs(scriptData.tts4),imgUrls[0]||"",imgUrls[1]||"",imgUrls[2]||"",imgUrls[3]||"",bgm,isA?"":(vidUrls||[]).join(","),json,"","","",charsStr,isA?"":cs(scriptData.tts5),isA?"":imgUrls[4]||""];
     const r=await callProxy(cfg.proxyUrl,{action:"writeSheet",sheetId:cfg.sheetId,values:vals});
     if(!r.success) throw new Error(r.error||"Sheets 전송 실패");
     const sheetRow=r.row; // appendRow가 반환한 행 번호
     addRecentTitle(isA?"A":"B",scriptData.title);
 
-    // ★ v11.7.5: Creatomate 렌더링 제출
+    // ★ v11.8.0: Creatomate 렌더링 제출
     if(!cfg.creatomateKey){
       // Creatomate 키 없으면 기존 방식 (Make.com이 렌더링) — Status를 "대기"로 변경
       try{await callProxy(cfg.proxyUrl,{action:"updateCell",sheetId:cfg.sheetId,row:sheetRow,updates:[{col:3,value:"대기"}]})}catch(ue){}
@@ -1322,7 +1351,7 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     if(!renderRes.success) throw new Error("렌더링 제출 실패: "+(renderRes.error||""));
     const renderId=renderRes.renderId;
 
-    // ★ v11.7.5: Creatomate 폴링 (5초 간격, 최대 60회 = 5분)
+    // ★ v11.8.0: Creatomate 폴링 (5초 간격, 최대 60회 = 5분)
     setAutoPhase("렌더링 중... ("+renderId.substring(0,8)+")");
     for(let attempt=0;attempt<60;attempt++){
       await new Promise(ok=>setTimeout(ok,5000));
@@ -1938,13 +1967,33 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
       setAutoPhase("에러");
       setAutoError("씬 "+failures.join(",")+" 실패 — 🔄 개별 재생성으로 복구");
     }else{
+      // ★ v11.8.0: 채널B — 영상 완료 후 Whisper 자막 자동 추출
+      setAutoPhase("자막 추출 중...");
+      const subData=[];
+      for(let si=0;si<SCENE_COUNT_B;si++){
+        if(vUrls[si]){
+          try{
+            const wr=await whisperExtract(cfg.proxyUrl,cfg.falKey,vUrls[si]);
+            subData.push(groupWordsToChunks(wr.words,10));
+            console.log("🔤 씬"+(si+1)+" 자막:",wr.fullText);
+          }catch(e){
+            console.warn("⚠️ 씬"+(si+1)+" Whisper 실패:",e.message);
+            subData.push([]);
+          }
+        }else{subData.push([]);}
+      }
+      setSubtitles(subData);
+      setSubConfirmed(false);
       setAutoPhase("영상완료");
     }
   };
 
-  // ★ v11.7.5: 전송 + Creatomate 렌더링 + 미리보기
+  // ★ v11.8.0: 전송 + Creatomate 렌더링 + 미리보기
   const runSend=async()=>{
-    if(!script)return;setAutoPhase("전송");setAutoError("");setRenderUrl("");
+    if(!script)return;
+    // ★ v11.8.0: 채널B는 자막 확정 후에만 전송 가능
+    if(!isA&&subtitles.length>0&&!subConfirmed){showToast("자막을 먼저 확정해주세요");return}
+    setAutoPhase("전송");setAutoError("");setRenderUrl("");
     try{
       const result=await _sendToSheets(script,images,videoUrls);
       setSent(true);setStep(4);
@@ -2065,7 +2114,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           <div className="ap-steps">
             <div className={"ap-step"+(doneScript?" done":autoPhase==="대본"?" active":"")}/>
             <div className={"ap-step"+(doneImgCount===(isA?12:SCENE_COUNT_B)?" done":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?" active":"")}/>
-            {!isA&&<div className={"ap-step"+(doneVidCount===SCENE_COUNT_B?" done":(autoPhase.includes("영상")&&autoPhase!=="영상완료")?" active":"")}/>}
+            {!isA&&<div className={"ap-step"+(doneVidCount===SCENE_COUNT_B?" done":(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")?" active":"")}/>}
+            {!isA&&<div className={"ap-step"+(subConfirmed?" done":autoPhase==="자막 추출 중..."?" active":"")}/>}
             <div className={"ap-step"+(doneSend?" done":autoPhase==="전송"?" active":autoPhase==="에러"?" error":"")}/>
           </div>
           <div className={"ap-status"+(autoPhase==="에러"?" error":"")}>
@@ -2074,8 +2124,9 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             {autoPhase==="대본완료"&&(isA?"✅ 대본 완료 — 📁 Storybook 이미지 업로드":"✅ 대본 완료 — 아래에서 확인 후 이미지 생성")}
             {(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")&&"🎨 "+autoPhase}
             {autoPhase==="이미지완료"&&(isA?"✅ 이미지 완료 — 확인 후 전송":"✅ 이미지 완료 — 확인 후 영상 생성")}
-            {(autoPhase.includes("영상")&&autoPhase!=="영상완료")&&"🎬 "+autoPhase}
-            {autoPhase==="영상완료"&&"✅ 영상 완료 — 확인 후 전송"}
+            {(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")&&"🎬 "+autoPhase}
+            {autoPhase==="자막 추출 중..."&&"🔤 자막 추출 중..."}
+            {autoPhase==="영상완료"&&(subConfirmed||isA?"✅ 영상 완료 — 확인 후 전송":"✅ 영상 완료 — 자막 확인 후 전송")}
             {autoPhase==="전송"&&"📤 Sheets 전송 중..."}
             {autoPhase==="완료"&&(isA?"대본→이미지→전송 완료!":"대본→이미지→영상→전송 완료!")}
             {autoPhase==="에러"&&autoError}
@@ -2100,9 +2151,38 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             </div>
           )}
           {autoPhase==="영상완료"&&(
-            <div style={{marginTop:8,display:"flex",gap:6}}>
-              <button className="btn btn-dark" onClick={runVideos} style={{flex:1}}>🔄 영상 재생성</button>
-              <button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
+            <div style={{marginTop:8}}>
+              {/* ★ v11.8.0: 채널B 자막 미리보기/수정 */}
+              {!isA&&subtitles.length>0&&!subConfirmed&&(
+                <div style={{background:"#1a1a2e",border:"1px solid #444",borderRadius:8,padding:12,marginBottom:8}}>
+                  <div style={{fontWeight:700,marginBottom:8,color:"#FFD700",fontSize:14}}>🔤 자막 미리보기 — 클릭하여 수정</div>
+                  {subtitles.map((sc,si)=>(
+                    <div key={si} style={{marginBottom:10}}>
+                      <div style={{fontSize:12,color:"#aaa",marginBottom:4}}>씬 {si+1}</div>
+                      {sc.length===0?<div style={{fontSize:11,color:"#666"}}>자막 없음 (자동 폴백)</div>:
+                      <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                        {sc.map((ch,ci)=>(
+                          <div key={ci} style={{background:"#2a2a3e",borderRadius:4,padding:"4px 8px",display:"flex",alignItems:"center",gap:4}}>
+                            <input value={ch.text} onChange={e=>{const n=subtitles.map((s,i)=>i===si?s.map((c,j)=>j===ci?{...c,text:e.target.value}:c):s);setSubtitles(n)}}
+                              style={{background:"transparent",border:"none",borderBottom:"1px solid #555",color:"#fff",fontSize:13,width:Math.max(50,ch.text.length*15)+"px",outline:"none",padding:"2px 0"}}/>
+                            <span style={{fontSize:9,color:"#666",whiteSpace:"nowrap"}}>{ch.start.toFixed(1)}s</span>
+                          </div>
+                        ))}
+                      </div>}
+                      {videoUrls[si]&&<video src={videoUrls[si]} controls preload="none" style={{width:"100%",maxHeight:100,marginTop:4,borderRadius:4}}/>}
+                    </div>
+                  ))}
+                  <button className="btn" onClick={()=>{setSubConfirmed(true);showToast("✅ 자막 확정!")}}
+                    style={{width:"100%",marginTop:8,background:"#FFD700",color:"#000",fontWeight:700}}>✅ 자막 확정</button>
+                </div>
+              )}
+              <div style={{display:"flex",gap:6}}>
+                <button className="btn btn-dark" onClick={runVideos} style={{flex:1}}>🔄 영상 재생성</button>
+                {(isA||subConfirmed)?
+                  <button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
+                  :<button className="btn btn-dark" disabled style={{flex:1,opacity:0.5}}>📤 자막 확정 필요</button>
+                }
+              </div>
             </div>
           )}
           {autoPhase==="에러"&&(
