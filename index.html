@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.8.0</title>
+<title>Shorts 관제탑 v11.8.1</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -577,7 +577,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.8.0</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.8.1</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -1278,12 +1278,13 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     const r=await callProxy(cfg.proxyUrl,body,60000);
     if(r.error) throw new Error(r.error);
     if(r.success&&r.videoUrl) return r.videoUrl;
-    // ★ v11.7.2: 폴링 10분 (5초×120), 연속 에러 15회 허용 (GAS 일시 지연 대비)
+    // ★ v11.8.1: fal.ai 직접 폴링 — Apps Script 프록시 제거 (타임아웃+에러은닉 근본 해결)
     if(r.success&&r.requestId){
-      console.log("📋 request_id: "+r.requestId+" → 폴링 시작");
+      console.log("📋 request_id: "+r.requestId+" → fal.ai 직접 폴링 시작");
       if(sceneIdx!=null) setAutoPhase(sceneLabel+" 제출 완료 ("+r.requestId.substring(0,12)+"...)");
+      const KLING_MODEL="fal-ai/kling-video/o3/standard/image-to-video";
       const MAX_POLLS=120;
-      const MAX_CONSECUTIVE=15; // ★ v11.7.2: 5→15 (GAS 일시 장애에도 견딤)
+      const MAX_CONSECUTIVE=10;
       let consecutiveErrors=0;
       for(let poll=0;poll<MAX_POLLS;poll++){
         await new Promise(res=>setTimeout(res,5000));
@@ -1291,23 +1292,31 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
         const timeStr=elapsed>=60?Math.floor(elapsed/60)+"분 "+elapsed%60+"초":elapsed+"초";
         if(sceneIdx!=null) setAutoPhase(sceneLabel+" 대기 중... ("+timeStr+")");
         try{
-          const check=await callProxy(cfg.proxyUrl,{action:"checkVideo",falApiKey:cfg.falKey,requestId:r.requestId},30000); // ★ v11.7.2: 20→30초
-          if(check.success&&check.videoUrl){
-            consecutiveErrors=0;
-            console.log("✅ 폴링 완료 ("+timeStr+"): "+check.videoUrl?.substring(0,60));
-            return check.videoUrl;
-          }
-          if(check.status==="FAILED") throw new Error("Kling 렌더 실패 ("+r.requestId+")");
-          if(check.success&&!check.error){
-            consecutiveErrors=0;
-            if(poll%12===11) console.log("⏳ 폴링 "+timeStr+" ("+r.requestId+")");
+          const statusRes=await fetch("https://queue.fal.run/"+KLING_MODEL+"/requests/"+r.requestId+"/status",{headers:{"Authorization":"Key "+cfg.falKey}});
+          if(!statusRes.ok){
+            consecutiveErrors++;
+            console.log("⚠️ 상태체크 HTTP "+statusRes.status+" ("+consecutiveErrors+"/"+MAX_CONSECUTIVE+")");
+            if(consecutiveErrors>=MAX_CONSECUTIVE) throw new Error("fal.ai 상태체크 연속 "+MAX_CONSECUTIVE+"회 HTTP 에러 ("+r.requestId+")");
             continue;
           }
-          consecutiveErrors++;
-          console.log("⚠️ 폴링 에러 "+consecutiveErrors+"/"+MAX_CONSECUTIVE+": "+(check.error||"알 수 없는 에러"));
-          if(consecutiveErrors>=MAX_CONSECUTIVE) throw new Error("폴링 연속 "+MAX_CONSECUTIVE+"회 실패 ("+r.requestId+")");
+          const statusData=await statusRes.json();
+          if(statusData.status==="COMPLETED"){
+            const resultRes=await fetch("https://queue.fal.run/"+KLING_MODEL+"/requests/"+r.requestId,{headers:{"Authorization":"Key "+cfg.falKey}});
+            if(!resultRes.ok) throw new Error("결과 조회 HTTP "+resultRes.status);
+            const resultData=await resultRes.json();
+            if(resultData.video&&resultData.video.url){
+              consecutiveErrors=0;
+              console.log("✅ 직접 폴링 완료 ("+timeStr+"): "+resultData.video.url.substring(0,60));
+              return resultData.video.url;
+            }
+            throw new Error("영상 URL 없음 (COMPLETED인데 video.url 없음)");
+          }
+          if(statusData.status==="FAILED") throw new Error("Kling 렌더 실패 ("+r.requestId+")");
+          // IN_QUEUE / IN_PROGRESS — 정상 대기
+          consecutiveErrors=0;
+          if(poll%12===11) console.log("⏳ 직접 폴링 "+timeStr+" status="+statusData.status+" ("+r.requestId+")");
         }catch(e){
-          if(e.message.includes("Kling 렌더 실패")||e.message.includes("폴링 연속")) throw e;
+          if(e.message.includes("렌더 실패")||e.message.includes("연속")) throw e;
           consecutiveErrors++;
           console.log("⚠️ 폴링 예외 "+consecutiveErrors+"/"+MAX_CONSECUTIVE+": "+e.message);
           if(consecutiveErrors>=MAX_CONSECUTIVE) throw new Error("폴링 연속 "+MAX_CONSECUTIVE+"회 예외 ("+r.requestId+")");
