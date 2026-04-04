@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.8.1</title>
+<title>Shorts 관제탑 v11.9.0</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -577,7 +577,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.8.1</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.0</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -619,6 +619,8 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   const[script,setScript]=useState(null);
   const[images,setImages]=useState([null,null,null,null]);
   const[videoUrls,setVideoUrls]=useState([null,null,null,null]);
+  // ★ v11.9.0: fal.ai에서 생성된 영상 URL 수동 회수용 (콘솔: recoverVideos(["url1","url2",...]))
+  window.recoverVideos=(urls)=>{if(Array.isArray(urls)){setVideoUrls(urls);console.log("✅ 영상 "+urls.filter(u=>u).length+"개 주입 완료");}else{console.log("사용법: recoverVideos(['url1','url2','url3','url4','url5'])")}};
   const[sent,setSent]=useState(false);
   const[autoPhase,setAutoPhase]=useState("");
   const[autoError,setAutoError]=useState("");
@@ -1267,63 +1269,23 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     }
   };
 
-  // ═══ v11.7.2: 채널B 전용 — Kling 3.0 O3 Standard I2V (비동기 큐 + 폴링) ═══
-  // ★ v11.7.2: 폴링 안정화 — timeout 30초, 연속 에러 15회, request_id UI 표시
+  // ═══ ★ v11.9.0: 채널B 전용 — Kling 3.0 O3 Standard I2V ═══
+  // Backend가 내부 폴링 (NB2와 동일 패턴) → 프론트는 대기만
   const _submitOneVideo=async(imageUrl,vidPrompt,ttsText,sceneIdx)=>{
     const fullPrompt=(vidPrompt||"");
     const dur=calcDuration(ttsText);
     const sceneLabel="영상 "+(sceneIdx!=null?(sceneIdx+1)+"/"+SCENE_COUNT_B:"");
     console.log("🎬 Kling O3 씬 제출: "+ttsText?.length+"자 → "+dur+"초");
-    const body={action:"submitVideo",falApiKey:cfg.falKey,imageUrl:imageUrl,prompt:fullPrompt,duration:String(dur),generateAudio:true,negativePrompt:"motion blur, face distortion, warping, morphing, inconsistent physics, floating objects, extra limbs, background shifting, slow motion",cfgScale:0.7};
-    const r=await callProxy(cfg.proxyUrl,body,60000);
-    if(r.error) throw new Error(r.error);
-    if(r.success&&r.videoUrl) return r.videoUrl;
-    // ★ v11.8.1: fal.ai 직접 폴링 — Apps Script 프록시 제거 (타임아웃+에러은닉 근본 해결)
-    if(r.success&&r.requestId){
-      console.log("📋 request_id: "+r.requestId+" → fal.ai 직접 폴링 시작");
-      if(sceneIdx!=null) setAutoPhase(sceneLabel+" 제출 완료 ("+r.requestId.substring(0,12)+"...)");
-      const KLING_MODEL="fal-ai/kling-video/o3/standard/image-to-video";
-      const MAX_POLLS=120;
-      const MAX_CONSECUTIVE=10;
-      let consecutiveErrors=0;
-      for(let poll=0;poll<MAX_POLLS;poll++){
-        await new Promise(res=>setTimeout(res,5000));
-        const elapsed=(poll+1)*5;
-        const timeStr=elapsed>=60?Math.floor(elapsed/60)+"분 "+elapsed%60+"초":elapsed+"초";
-        if(sceneIdx!=null) setAutoPhase(sceneLabel+" 대기 중... ("+timeStr+")");
-        try{
-          const statusRes=await fetch("https://queue.fal.run/"+KLING_MODEL+"/requests/"+r.requestId+"/status",{headers:{"Authorization":"Key "+cfg.falKey}});
-          if(!statusRes.ok){
-            consecutiveErrors++;
-            console.log("⚠️ 상태체크 HTTP "+statusRes.status+" ("+consecutiveErrors+"/"+MAX_CONSECUTIVE+")");
-            if(consecutiveErrors>=MAX_CONSECUTIVE) throw new Error("fal.ai 상태체크 연속 "+MAX_CONSECUTIVE+"회 HTTP 에러 ("+r.requestId+")");
-            continue;
-          }
-          const statusData=await statusRes.json();
-          if(statusData.status==="COMPLETED"){
-            const resultRes=await fetch("https://queue.fal.run/"+KLING_MODEL+"/requests/"+r.requestId,{headers:{"Authorization":"Key "+cfg.falKey}});
-            if(!resultRes.ok) throw new Error("결과 조회 HTTP "+resultRes.status);
-            const resultData=await resultRes.json();
-            if(resultData.video&&resultData.video.url){
-              consecutiveErrors=0;
-              console.log("✅ 직접 폴링 완료 ("+timeStr+"): "+resultData.video.url.substring(0,60));
-              return resultData.video.url;
-            }
-            throw new Error("영상 URL 없음 (COMPLETED인데 video.url 없음)");
-          }
-          if(statusData.status==="FAILED") throw new Error("Kling 렌더 실패 ("+r.requestId+")");
-          // IN_QUEUE / IN_PROGRESS — 정상 대기
-          consecutiveErrors=0;
-          if(poll%12===11) console.log("⏳ 직접 폴링 "+timeStr+" status="+statusData.status+" ("+r.requestId+")");
-        }catch(e){
-          if(e.message.includes("렌더 실패")||e.message.includes("연속")) throw e;
-          consecutiveErrors++;
-          console.log("⚠️ 폴링 예외 "+consecutiveErrors+"/"+MAX_CONSECUTIVE+": "+e.message);
-          if(consecutiveErrors>=MAX_CONSECUTIVE) throw new Error("폴링 연속 "+MAX_CONSECUTIVE+"회 예외 ("+r.requestId+")");
-        }
-      }
-      throw new Error("Kling 10분 초과 ("+r.requestId+" → fal.ai에서 회수 가능)");
+    if(sceneIdx!=null) setAutoPhase(sceneLabel+" 생성 중... (최대 5분)");
+    const body={action:"submitVideo",falApiKey:cfg.falKey,imageUrl:imageUrl,prompt:fullPrompt,duration:String(dur),generateAudio:true,negativePrompt:"face distortion, morphing, extra limbs",cfgScale:0.7};
+    // ★ v11.9.0: Backend가 내부 폴링하므로 타임아웃 360초 (6분)
+    const r=await callProxy(cfg.proxyUrl,body,360000);
+    if(r.success&&r.videoUrl){
+      console.log("✅ 영상 완료: "+r.videoUrl.substring(0,60));
+      return r.videoUrl;
     }
+    // 5분 초과 시 request_id로 수동 회수 안내
+    if(r.requestId) throw new Error("Kling 5분 초과 ("+r.requestId+" → fal.ai 대시보드에서 회수)");
     throw new Error(r.error||"Kling 영상 생성 실패");
   };
 
