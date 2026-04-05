@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.9.1</title>
+<title>Shorts 관제탑 v11.9.2</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -162,8 +162,10 @@ body{max-width:none;padding-bottom:0;background:#06060a}
 .dk-card-ch{font-size:13px;font-weight:600;color:#ddd}
 .dk-card-cnt{margin-left:auto;font-size:11px;color:#555}
 .dk-card-media{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #1a1a28}
+.dk-card-media.media-a{grid-template-columns:1fr 1fr 1fr}
 .dk-cell{aspect-ratio:9/16;background:#111118;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;color:#333;font-size:12px}
-.dk-cell:first-child{border-right:1px solid #1a1a28}
+.dk-card-media.media-a .dk-cell{aspect-ratio:1/1}
+.dk-cell:not(:last-child){border-right:1px solid #1a1a28}
 .dk-cell.has{background:#111}
 .dk-cell.gen{background:#ef444410}
 .dk-cell img,.dk-cell video{width:100%;height:100%;object-fit:cover;cursor:pointer}
@@ -629,7 +631,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.1</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.2</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -669,7 +671,7 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   const[topicCandidatesB,setTopicCandidatesB]=useState(null); // v11.4.0: 2단계 분리 — step1 후보
   const[picked,setPicked]=useState("");
   const[script,setScript]=useState(null);
-  const[images,setImages]=useState([null,null,null,null]);
+  const[images,setImages]=useState([null,null,null,null,null,null,null,null,null,null,null,null]);
   const[videoUrls,setVideoUrls]=useState([null,null,null,null]);
   // ★ v11.9.0: fal.ai에서 생성된 영상 URL 수동 회수용 (콘솔: recoverVideos(["url1","url2",...]))
   window.recoverVideos=(urls)=>{if(Array.isArray(urls)){setVideoUrls(urls);console.log("✅ 영상 "+urls.filter(u=>u).length+"개 주입 완료");}else{console.log("사용법: recoverVideos(['url1','url2','url3','url4','url5'])")}};
@@ -697,7 +699,7 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   // 슬롯 전환
   const resetSlot=(sl)=>{
     if(sl==="B"&&!today.hasBSlot&&!cfg.testMode) return;
-    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);
+    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?12:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);
     rejectedTopicsA.current=[];rejectedTopicsB.current=[];
     const cached=sl==="A"?topicsCacheA.current:topicsCacheB.current;
     if(cached){setTopics(cached);setStep(1)}else{setTopics(null)}
@@ -2155,7 +2157,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         {script&&<div className="dk-cards">{Array.from({length:isA?4:SCENE_COUNT_B},(_,i)=>i).map(i=>{
           const tt=(script["tts"+(i+1)]||"").replace(/\|/g," ");
           const ch=!isA?script["char"+(i+1)]:"";
-          const hi=!!images[i]; const hv=!!videoUrls[i];
+          const imgBase=isA?i*3:i; // ★ v11.9.2: 채널A 씬당 3이미지 올바른 인덱스
+          const hi=!!images[imgBase]; const hv=!!videoUrls[i];
           const va=autoPhase.includes("영상 "+(i+1));
           return(<div key={i} className={"dk-card"+(va?" active":"")+((!hi&&doneImgCount>0)?" pend":"")}>
             <div className="dk-card-hdr">
@@ -2163,20 +2166,22 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
               <span className="dk-card-ch">{ch||"씬 "+(i+1)}</span>
               <span className="dk-card-cnt">{tt.length}자</span>
             </div>
-            <div className="dk-card-media">
-              <div className={"dk-cell"+(hi?" has":"")}>
+            <div className={"dk-card-media"+(isA?" media-a":"")}>
+              {isA?[0,1,2].map(j=>{const idx=i*3+j;const has=!!images[idx];return(
+                <div key={j} className={"dk-cell"+(has?" has":"")}>
+                  {has?<img src={images[idx]} alt="" onClick={()=>setModalImg(images[idx])}/>:<span>IMG</span>}
+                  <div className={"dk-badge"+(has?" done":"")}>{has?"IMG":"대기"}</div>
+                </div>
+              )}):<><div className={"dk-cell"+(hi?" has":"")}>
                 {hi?<img src={images[i]} alt="" onClick={()=>setModalImg(images[i])}/>:<span>IMG</span>}
                 <div className={"dk-badge"+(hi?" done":"")}>{hi?"IMG":"대기"}</div>
                 {(hi||script["img"+(i+1)])&&<div className="dk-cell-btns">{hi&&script["img"+(i+1)]&&<button onClick={()=>{cp(script["img"+(i+1)]);showToast("📋")}}>📋</button>}{!isRunning&&script["img"+(i+1)]&&<button onClick={()=>regenSingleImage(i)}>🔄</button>}</div>}
               </div>
-              {isA?<div className={"dk-cell"+(images[i+4]?" has":"")}>
-                {images[i+4]?<img src={images[i+4]} alt="" onClick={()=>setModalImg(images[i+4])}/>:<span>IMG</span>}
-                <div className={"dk-badge"+(images[i+4]?" done":"")}>{images[i+4]?"IMG":"대기"}</div>
-              </div>:<div className={"dk-cell"+(hv?" has":va?" gen":"")}>
+              <div className={"dk-cell"+(hv?" has":va?" gen":"")}>
                 {hv?<video src={videoUrls[i]} controls preload="none"/>:<span>{va?"생성 중...":"VID"}</span>}
                 <div className={"dk-badge"+(hv?" done":va?" active":"")}>{hv?"VID":va?"GEN":"대기"}</div>
                 {(hv||script["vid"+(i+1)])&&!isRunning&&<div className="dk-cell-btns"><button onClick={()=>regenSingleVideo(i)}>🎬</button></div>}
-              </div>}
+              </div></>}
             </div>
             <div className="dk-card-tts">{tt}</div>
           </div>);
