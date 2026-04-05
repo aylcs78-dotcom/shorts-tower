@@ -1305,7 +1305,7 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
   const _generateImageNB2=async(prompt,aspectRatio)=>{
     for(let attempt=1;attempt<=3;attempt++){
       try{
-        const r=await callProxy(cfg.proxyUrl,{action:"generateImageNB2",falApiKey:cfg.falKey,prompt:prompt.trim(),aspectRatio:aspectRatio||"9:16"});
+        const r=await callProxy(cfg.proxyUrl,{action:"generateImageNB2",falApiKey:cfg.falKey,prompt:prompt.trim(),aspectRatio:aspectRatio||"9:16"},120000);
         if(r.success&&r.imageUrl) return r.imageUrl;
         throw new Error(r.error||"응답에 imageUrl 없음");
       }catch(e){if(attempt<3)await new Promise(r=>setTimeout(r,attempt*3000));else throw new Error("NB2 이미지 3회 실패: "+e.message)}
@@ -1314,7 +1314,7 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
   const _generateImageNB2Edit=async(prompt,refUrls,aspectRatio)=>{
     for(let attempt=1;attempt<=3;attempt++){
       try{
-        const r=await callProxy(cfg.proxyUrl,{action:"generateImageNB2Edit",falApiKey:cfg.falKey,prompt:prompt.trim(),imageUrls:Array.isArray(refUrls)?refUrls:[refUrls],aspectRatio:aspectRatio||"9:16"});
+        const r=await callProxy(cfg.proxyUrl,{action:"generateImageNB2Edit",falApiKey:cfg.falKey,prompt:prompt.trim(),imageUrls:Array.isArray(refUrls)?refUrls:[refUrls],aspectRatio:aspectRatio||"9:16"},120000);
         if(r.success&&r.imageUrl) return r.imageUrl;
         throw new Error(r.error||"응답에 imageUrl 없음");
       }catch(e){if(attempt<3)await new Promise(r=>setTimeout(r,attempt*3000));else throw new Error("NB2 Edit 3회 실패: "+e.message)}
@@ -2043,7 +2043,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
       const url=await _generateImageNB2(prompt,"9:16");
       const newImgs=[...images];newImgs[idx]=url;setImages(newImgs);
       showToast("✅ IMG"+(idx+1)+" 재생성 완료");
-      setAutoPhase(step>=3?"이미지완료":"대본완료");
+      if(newImgs.every(u=>u)){setStep(3);setAutoPhase("이미지완료")}
+      else{setAutoPhase(step>=3?"이미지완료":"대본완료")}
     }catch(e){setAutoPhase("에러");setAutoError("IMG"+(idx+1)+" 재생성 실패: "+e.message)}
   };
 
