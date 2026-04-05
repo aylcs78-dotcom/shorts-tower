@@ -2058,7 +2058,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
       const url=await _submitOneVideo(images[idx],vidPrompt,ttsField,idx);
       const newVids=[...videoUrls];newVids[idx]=url;setVideoUrls(newVids);
       showToast("✅ VID"+(idx+1)+" 재생성 완료");
-      setAutoPhase("영상완료");
+      if(newVids.every(u=>u)){setAutoPhase("영상완료")}
+      else{setAutoPhase("이미지완료")}
     }catch(e){setAutoPhase("에러");setAutoError("VID"+(idx+1)+" 재생성 실패: "+e.message)}
   };
 
@@ -2174,7 +2175,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
               </div>:<div className={"dk-cell"+(hv?" has":va?" gen":"")}>
                 {hv?<video src={videoUrls[i]} controls preload="none"/>:<span>{va?"생성 중...":"VID"}</span>}
                 <div className={"dk-badge"+(hv?" done":va?" active":"")}>{hv?"VID":va?"GEN":"대기"}</div>
-                {hv&&!isRunning&&<div className="dk-cell-btns"><button onClick={()=>regenSingleVideo(i)}>🎬</button></div>}
+                {(hv||script["vid"+(i+1)])&&!isRunning&&<div className="dk-cell-btns"><button onClick={()=>regenSingleVideo(i)}>🎬</button></div>}
               </div>}
             </div>
             <div className="dk-card-tts">{tt}</div>
