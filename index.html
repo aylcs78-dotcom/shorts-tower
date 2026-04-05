@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.9.0</title>
+<title>Shorts 관제탑 v11.9.1</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -629,7 +629,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.0</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.1</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -2165,7 +2165,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
               <div className={"dk-cell"+(hi?" has":"")}>
                 {hi?<img src={images[i]} alt="" onClick={()=>setModalImg(images[i])}/>:<span>IMG</span>}
                 <div className={"dk-badge"+(hi?" done":"")}>{hi?"IMG":"대기"}</div>
-                {hi&&<div className="dk-cell-btns">{script["img"+(i+1)]&&<button onClick={()=>{cp(script["img"+(i+1)]);showToast("📋")}}>📋</button>}{!isRunning&&<button onClick={()=>regenSingleImage(i)}>🔄</button>}</div>}
+                {(hi||script["img"+(i+1)])&&<div className="dk-cell-btns">{hi&&script["img"+(i+1)]&&<button onClick={()=>{cp(script["img"+(i+1)]);showToast("📋")}}>📋</button>}{!isRunning&&script["img"+(i+1)]&&<button onClick={()=>regenSingleImage(i)}>🔄</button>}</div>}
               </div>
               {isA?<div className={"dk-cell"+(images[i+4]?" has":"")}>
                 {images[i+4]?<img src={images[i+4]} alt="" onClick={()=>setModalImg(images[i+4])}/>:<span>IMG</span>}
