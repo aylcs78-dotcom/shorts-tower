@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.9.3</title>
+<title>Shorts 관제탑 v11.9.4</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -631,7 +631,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.3</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.4</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -1326,15 +1326,46 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     }
   };
 
-  // ═══ ★ v11.9.0: 채널B 전용 — Kling 3.0 O3 Standard I2V ═══
-  // Backend가 내부 폴링 (NB2와 동일 패턴) → 프론트는 대기만
+  // ═══ ★ v11.9.4: 채널B 전용 — Kling Omni 3.0 Standard I2V ═══
+  // ★ v11.9.4: cfg_scale 0.5 + multi_prompt 멀티샷 자동 파싱 + elements 지원
+  // vid 프롬프트에 [Shot1:2s] 마커가 있으면 자동으로 multi_prompt 분리
+  const _parseMultiShots=(vidPrompt)=>{
+    const regex=/\[Shot\s*(\d+)\s*:\s*(\d+)\s*s?\s*\]/gi;
+    const shots=[];let match;const indices=[];
+    while((match=regex.exec(vidPrompt))!==null){
+      indices.push({idx:match.index,end:match.index+match[0].length,dur:parseInt(match[2])});
+    }
+    if(indices.length<2) return null; // 마커 2개 미만 → 단일 prompt 모드
+    for(let i=0;i<indices.length;i++){
+      const start=indices[i].end;
+      const end=i<indices.length-1?indices[i+1].idx:vidPrompt.length;
+      const prompt=vidPrompt.substring(start,end).trim();
+      if(prompt) shots.push({prompt:prompt,duration:String(indices[i].dur)});
+    }
+    return shots.length>=2?shots:null;
+  };
   const _submitOneVideo=async(imageUrl,vidPrompt,ttsText,sceneIdx)=>{
     const fullPrompt=(vidPrompt||"");
     const dur=calcDuration(ttsText);
     const sceneLabel="영상 "+(sceneIdx!=null?(sceneIdx+1)+"/"+SCENE_COUNT_B:"");
-    console.log("🎬 Kling O3 씬 제출: "+ttsText?.length+"자 → "+dur+"초");
+    // ★ v11.9.4: multi_prompt 자동 파싱
+    const shots=_parseMultiShots(fullPrompt);
+    if(shots){
+      console.log("🎬 Kling O3 멀티샷 제출: "+shots.length+"샷 ("+shots.map(s=>s.duration+"s").join("+")+")");
+    }else{
+      console.log("🎬 Kling O3 씬 제출: "+ttsText?.length+"자 → "+dur+"초");
+    }
     if(sceneIdx!=null) setAutoPhase(sceneLabel+" 생성 중... (최대 5분)");
-    const body={action:"submitVideo",falApiKey:cfg.falKey,imageUrl:imageUrl,prompt:fullPrompt,duration:String(dur),generateAudio:true,negativePrompt:"face distortion, morphing, extra limbs",cfgScale:0.7};
+    const body={action:"submitVideo",falApiKey:cfg.falKey,imageUrl:imageUrl,generateAudio:true,negativePrompt:"face distortion, morphing, extra limbs",cfgScale:0.5};
+    if(shots){
+      // ★ 멀티샷 모드: multi_prompt 배열 전송
+      body.multiPrompt=shots;
+      body.shotType="customize";
+    }else{
+      // 단일 prompt 모드 (하위 호환)
+      body.prompt=fullPrompt;
+      body.duration=String(dur);
+    }
     // ★ v11.9.0: Backend가 내부 폴링하므로 타임아웃 360초 (6분)
     const r=await callProxy(cfg.proxyUrl,body,360000);
     if(r.success&&r.videoUrl){
