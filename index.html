@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.9.5</title>
+<title>Shorts 관제탑 v11.9.6</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -73,7 +73,7 @@ textarea,input{font-family:inherit}
 .sent-msg{margin-top:8px;padding:8px;background:#16a34a15;border-radius:8px;font-size:12px;color:#4ade80;text-align:center}
 .pad{padding:12px 16px}
 .info-row{display:flex;justify-content:space-between;align-items:center}
-.ch-a{color:#ff6b6b}.ch-b{color:#4ade80}
+.ch-a{color:#ff6b6b}.ch-b{color:#4ade80}.ch-c{color:#fbbf24}
 .topic-card{background:#0a0a10;border:1px solid #222;border-radius:10px;padding:12px;margin-top:8px;cursor:pointer;transition:border-color 0.2s,background 0.2s}
 .topic-card:active{background:#1a1a28;border-color:#ff4444}
 .topic-card.selected{border-color:#ff4444;background:#ff444410}
@@ -121,6 +121,7 @@ body{max-width:none;padding-bottom:0;background:#06060a}
 .dk-ch-btn{flex:1;padding:8px 0;border-radius:8px;border:1px solid #222;background:#111;color:#666;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 .dk-ch-btn.active-a{border-color:#818cf8;background:#818cf815;color:#818cf8}
 .dk-ch-btn.active-b{border-color:#ef4444;background:#ef444415;color:#ef4444}
+.dk-ch-btn.active-c{border-color:#fbbf24;background:#fbbf2415;color:#fbbf24}
 .dk-ch-btn.dis{opacity:0.3;cursor:not-allowed}
 .dk-pipe{position:relative;padding-left:22px}
 .dk-pipe-line{position:absolute;left:7px;top:6px;bottom:6px;width:1.5px;background:#222}
@@ -189,19 +190,24 @@ const {useState,useEffect,useCallback,useRef} = React;
 
 // ═══ v10.0 CONSTANTS ═══
 // ★ v11.0.3: 워치리스트 274편 분석 → 19시 KST 조회수 최고 → 10분 전 업로드
-// 채널A: 매일 1편 (18:50 KST)
-// 채널B: 주 3편 (화/목/토 18:40 KST)
+// 채널A: 휴면
+// 채널B: 주 4편 (수/금 19:00, 토/일 10:00 KST)
+// 채널C: 매일 1편 (18:00 KST)
 const DAYS_KR=["일","월","화","수","목","금","토"];
-const B_DAYS=[2,4,6]; // 화,목,토
+const B_DAYS=[3,5,6,0]; // 수,금,토,일
+const C_DAYS=[0,1,2,3,4,5,6]; // 매일
 const SCHEDULE_A={weekday:"18:50",weekend:"18:50"};
-const SCHEDULE_B={2:"18:40",4:"18:40",6:"18:40"};
+const SCHEDULE_B={3:"19:00",5:"19:00",6:"10:00",0:"10:00"};
+const SCHEDULE_C="18:00";
 // 템플릿/구조 로테이션 (요일 기반)
 const ROT_A={0:"T1/A형",1:"T2/B형",2:"T3/C형",3:"T4/D형",4:"T5/A형",5:"T1/B형",6:"T2/C형"};
 const STRUCTURE={A:"후킹→충격팩트→배경설명→개인해석",B:"질문제기→일반상식→뒤집기→개인해석",C:"스토리도입→사례→분석→개인해석",D:"A vs B비교→장단점→승자발표→개인해석"};
 const MOOD_CFG={urgent:{zoom:["105%","110%"],scene1Zoom:["105%","112%"],bg:"#0d0d0d",hook:"#FF3333",fade:"0.3 s"},warm:{zoom:["105%","108%"],scene1Zoom:["105%","110%"],bg:"#1a1a2e",hook:"#FFEAA7",fade:"0.8 s"},shocking:{zoom:["108%","105%"],scene1Zoom:["110%","105%"],bg:"#000000",hook:"#FFFFFF",fade:"0.15 s"},calm:{zoom:["105%","107%"],scene1Zoom:["105%","108%"],bg:"#1a1a2e",hook:"#74b9ff",fade:"1.0 s"}};
 const BGM={urgent:["https://drive.google.com/uc?export=download&confirm=t&id=1CzfdW81drUSoHTYBH3_w0qkv0xFY1CEA","https://drive.google.com/uc?export=download&confirm=t&id=1uHKL_DoUSolcDbkuA-9soSpjkeuPHt5l"],warm:["https://drive.google.com/uc?export=download&confirm=t&id=1CmlzY37mKojiBEvElJqt4_U44Yfoh5Vb","https://drive.google.com/uc?export=download&confirm=t&id=1lyle_uiewN5VGVgUFhvNuxIif8hOt5ZS"],shocking:["https://drive.google.com/uc?export=download&confirm=t&id=1ib9zaqyFf21jJ73qb7sjE6DqdBdxPpKN","https://drive.google.com/uc?export=download&confirm=t&id=1nmoMR23SiFdHoSqTFxfvy9jAjmFvFQBj"],calm:["https://drive.google.com/uc?export=download&confirm=t&id=1OynmpSnhFDUyvDIicC6X3lFzol28FLQi","https://drive.google.com/uc?export=download&confirm=t&id=1QL4yfei-vTlZfhwD_MbV2phTFC6PeqfR"]};
 const VID_A="Mx48CWClvl522or3Frvp"; // ElevenLabs 채널A SEGU 보이스
+const VID_C="lO4E4qxAvq4BhWUWF8Ci"; // ElevenLabs 채널C JasonK 보이스
 const SCENE_COUNT_B=5; // v11.3.0: 채널B 나열형 5상황 (8초×5=40초)
+const IMG_COUNT_C=7; // 채널C: 이미지 6~7장
 
 // ★ v11.6.0: 웹 호스팅용 기본값 — 새 기기에서도 자동 연결
 const DEFAULT_PROXY_URL="https://script.google.com/macros/s/AKfycbySaIdHp5x1klFIMfGCr83hHLVMUaRnzzl98zgARyiQl8RyP-nnsxwpMKS0aSWh3hWZ/exec";
@@ -279,7 +285,7 @@ function resolveKf(kfArr,dur){
 }
 
 // ═══ HELPERS ═══
-function getToday(){const d=new Date();return{dow:d.getDay(),dowKr:DAYS_KR[d.getDay()],dateStr:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"),isWeekday:d.getDay()>=1&&d.getDay()<=5,isSaturday:d.getDay()===6,isSunday:d.getDay()===0,hasBSlot:B_DAYS.includes(d.getDay())}}
+function getToday(){const d=new Date();return{dow:d.getDay(),dowKr:DAYS_KR[d.getDay()],dateStr:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"),isWeekday:d.getDay()>=1&&d.getDay()<=5,isSaturday:d.getDay()===6,isSunday:d.getDay()===0,hasBSlot:B_DAYS.includes(d.getDay()),hasCSlot:true}}
 function parseTmpl(t){const m=t&&t.match(/T(\d)\/(\w)형/);return m?{t:m[1],s:m[2]}:{t:"?",s:"?"}}
 function cp(text){try{navigator.clipboard.writeText(text)}catch(e){const t=document.createElement("textarea");t.value=text;document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t)}}
 function ls(k,v){if(v===undefined){try{const r=localStorage.getItem("sct_"+k);return r?JSON.parse(r):null}catch(e){return null}}else{try{localStorage.setItem("sct_"+k,JSON.stringify(v))}catch(e){}}}
@@ -548,6 +554,44 @@ function buildJSON_B(videoUrls,tts,mood,hook,subtitleData){
   ]});
 }
 
+// ═══ ★ v11.9.6: buildJSON_C — 채널C 잡학중독: 단일 나레이션 + 이미지 시퀀스 ═══
+function buildJSON_C(imgUrls,tts,hookL1,hookL2,voiceId){
+  const prov="elevenlabs model_id=eleven_multilingual_v2 voice_id="+(voiceId||VID_C)+" stability=0.55 similarity_boost=0.70 style=0.15 use_speaker_boost=true";
+  const validImgs=imgUrls.filter(u=>u&&u.length>5);
+  const imgCount=validImgs.length||1;
+  const imgEls=validImgs.map((url,i)=>{
+    const dur=null; // 전체를 이미지 수로 균등 분할 — Creatomate가 자동 계산
+    return {type:"image",source:url,time:(i===0?0:null),duration:dur,
+      width:"110%",height:"110%",fit:"cover",
+      animations:[{type:"scale",time:0,duration:null,start_scale:"100%",end_scale:"105%",easing:"linear"}]};
+  });
+  // 이미지에 time 계산: TTS 전체 길이를 모르므로, 각 이미지 duration을 생략하면 Creatomate가 오디오에 맞춰 균등 분배
+  // → 안전하게 직접 time 배분: 42초 기준 균등
+  const estDuration=42;
+  const perImg=estDuration/imgCount;
+  imgEls.forEach((el,i)=>{el.time=parseFloat((i*perImg).toFixed(1));el.duration=parseFloat(perImg.toFixed(1))});
+
+  const compEls=[
+    ...imgEls,
+    {type:"text",transcript_source:"VO",transcript_maximum_length:10,transcript_split:"word",
+      y:"85%",width:"90%",x_alignment:"50%",y_alignment:"50%",
+      fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",
+      font_family:"Noto Sans KR",font_weight:"900",font_size:"8 vmin",
+      background_color:"rgba(0,0,0,0.7)",background_x_padding:"25%",background_y_padding:"20%",background_border_radius:"10%"}
+  ];
+
+  return JSON.stringify({output_format:"mp4",width:1080,height:1920,fill_color:"#000000",elements:[
+    {type:"audio",name:"VO",source:"[tts]"+tts+"[/tts]",provider:prov},
+    {type:"text",track:2,text:hookL1||"",y:"9%",width:"95%",x_alignment:"50%",y_alignment:"50%",
+      fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.2 vmin",
+      font_family:"Noto Sans KR",font_weight:"900",font_size:"7 vmin"},
+    {type:"text",track:3,text:hookL2||"",y:"14%",width:"95%",x_alignment:"50%",y_alignment:"50%",
+      fill_color:"#FFD700",stroke_color:"#000000",stroke_width:"1.2 vmin",
+      font_family:"Noto Sans KR",font_weight:"900",font_size:"7 vmin"},
+    {type:"composition",track:4,y:"55%",height:"75%",clip:true,elements:compEls}
+  ]});
+}
+
 // ═══ API 헬퍼 ═══
 async function callClaude(proxyUrl,claudeKey,prompt,search){
   const r=await callProxy(proxyUrl,{action:"callClaude",claudeApiKey:claudeKey,prompt:prompt,useSearch:!!search});
@@ -637,10 +681,10 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.5</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.6</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
-            <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
+            <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"B+C":"C only"}{cfg.testMode?" 🧪":""}</div></div>
           </div>
         </div>
       </div>
@@ -669,7 +713,7 @@ function App(){
 
 // ═══ WORKFLOW v10.0 ═══
 function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
-  const[slot,setSlot]=useState("A"); // "A" or "B"
+  const[slot,setSlot]=useState("C"); // "A", "B", or "C"
   const[step,setStep]=useState(0);
   const[loading,setLoading]=useState("");
   const[topics,setTopics]=useState(null);
@@ -698,16 +742,19 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   const topicHistoryB=useRef({good:[],bad:[]});
 
   const isA=slot==="A";
-  const tmpl=isA?ROT_A[today.dow]:"나열형";
+  const isC=slot==="C";
+  const isB=slot==="B";
+  const tmpl=isA?ROT_A[today.dow]:isC?"잡학":"나열형";
   const{t,s}=parseTmpl(tmpl);
-  const scheduleTime=isA?(today.isWeekday?SCHEDULE_A.weekday:SCHEDULE_A.weekend):(SCHEDULE_B[today.dow]||"—");
+  const scheduleTime=isA?(today.isWeekday?SCHEDULE_A.weekday:SCHEDULE_A.weekend):isC?SCHEDULE_C:(SCHEDULE_B[today.dow]||"—");
+  const imgSlotCount=isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B;
 
   // 슬롯 전환
   const resetSlot=(sl)=>{
     if(sl==="B"&&!today.hasBSlot&&!cfg.testMode) return;
-    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?12:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);
+    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?12:sl==="C"?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:sl==="C"?0:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);
     rejectedTopicsA.current=[];rejectedTopicsB.current=[];
-    const cached=sl==="A"?topicsCacheA.current:topicsCacheB.current;
+    const cached=sl==="A"?topicsCacheA.current:sl==="C"?null:topicsCacheB.current;
     if(cached){setTopics(cached);setStep(1)}else{setTopics(null)}
   };
 
@@ -1311,6 +1358,36 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     return data;
   };
 
+  // ═══ ★ v11.9.6: 채널C 잡학중독 — 대본 생성 (stub, 주로 풀세트 붙여넣기 사용) ═══
+  const _generateScript_C=async(topicText)=>{
+    const prompt=`너는 "잡학중독" 유튜브 쇼츠 대본 작가야. 주제: "${topicText}"
+
+[대본 규칙]
+- 길이: 160~200자 (40~43초)
+- 화법: "~다고 함" 혼합체 (첫문장+마지막만 "다고 함", 중간은 ~었음/~해버림/~거절 등)
+- 구조: 훅(결론/충격) → 배경설명 → 반전/핵심팩트 → 결과/현재
+- 마지막 문장이 첫 문장과 자연스럽게 이어지도록 (무한루프)
+
+[출력 JSON]
+{
+  "title": "40자이내 #shorts",
+  "tts": "전체 나레이션 160~200자",
+  "hook_line1": "수식어 (7~8자)",
+  "hook_line2": "핵심 주제 (7~8자)",
+  "desc": "설명란 2~3줄",
+  "hashtags": "#잡학중독 #필수상식 +2~3개",
+  "tags": "검색키워드 5~7개",
+  "mood": "urgent|warm|shocking|calm",
+  "hook_type": "question|pain|promise"
+}
+★ JSON만 출력. 설명 금지.`;
+    const raw=await callClaude(cfg.proxyUrl,cfg.claudeKey,prompt,true);
+    const data=_parseJSON(raw);
+    if(!data||!data.title) throw new Error("채널C 대본 JSON 파싱 실패");
+    if(data.tts&&!data.tts1) data.tts1=data.tts;
+    return data;
+  };
+
   // ═══ v10.8: 이미지 생성 (공용 — A/B 동일 API) ═══
   // ═══ v10.9: 양 채널 공통 — Nano Banana 2 T2I ($0.08/장) ═══
   const _generateImageNB2=async(prompt,aspectRatio)=>{
@@ -1383,26 +1460,31 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     throw new Error(r.error||"Kling 영상 생성 실패");
   };
 
-  // ═══ v10.8: Sheets 전송 (공용 — JSON 빌드만 A/B 분기) ═══
-  // ★ v11.5.0: 채널A hook_line1/hook_line2 분리 + 12이미지
-  // ★ v11.8.0: _sendToSheets → Sheets 저장 + Creatomate 렌더링 + 미리보기
+  // ═══ v10.8: Sheets 전송 (공용 — JSON 빌드 A/B/C 분기) ═══
+  // ★ v11.9.6: 채널C 잡학중독 추가
   const _sendToSheets=async(scriptData,imgUrls,vidUrls)=>{
     const moodBgms=BGM[scriptData.mood]||BGM.urgent;
     const bgm=moodBgms[Math.floor(Math.random()*moodBgms.length)];
-    const ttsArr=isA?[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4]:[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4,scriptData.tts5];
-    const json=isA
-      ? buildJSON_A(imgUrls,ttsArr,scriptData.mood,scriptData.hook_line1||scriptData.hook||"",scriptData.hook_line2||"",cfg.voiceIdA||VID_A,bgm)
-      : buildJSON_B(vidUrls,ttsArr,scriptData.mood,scriptData.hook,subtitles);
-    const charsStr=isA?"":[scriptData.char1,scriptData.char2,scriptData.char3,scriptData.char4,scriptData.char5].filter(Boolean).join(",");
+    let json;
+    if(isC){
+      json=buildJSON_C(imgUrls,scriptData.tts||scriptData.tts1||"",scriptData.hook_line1||"",scriptData.hook_line2||"",VID_C);
+    }else{
+      const ttsArr=isA?[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4]:[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4,scriptData.tts5];
+      json=isA
+        ? buildJSON_A(imgUrls,ttsArr,scriptData.mood,scriptData.hook_line1||scriptData.hook||"",scriptData.hook_line2||"",cfg.voiceIdA||VID_A,bgm)
+        : buildJSON_B(vidUrls,ttsArr,scriptData.mood,scriptData.hook,subtitles);
+    }
+    const charsStr=(isA||isC)?"":[scriptData.char1,scriptData.char2,scriptData.char3,scriptData.char4,scriptData.char5].filter(Boolean).join(",");
     const cs=t=>(t||"").replace(/\|/g," ").replace(/\s{2,}/g," ").trim();
     // ★ v11.5.0: hook열에는 두줄 합침 (Sheets 기록용)
-    const hookForSheet=isA?(scriptData.hook_line1||scriptData.hook||"")+"\n"+(scriptData.hook_line2||""):scriptData.hook;
+    const hookForSheet=(isA||isC)?(scriptData.hook_line1||scriptData.hook||"")+"\n"+(scriptData.hook_line2||""):scriptData.hook;
+    const chLabel=isA?"A":isC?"C":"B";
     // ★ v11.8.0: Status를 C열(index 2)로 이동. "렌더중"으로 초기 저장.
-    const vals=[today.dateStr,isA?"A":"B","렌더중",scriptData.title,scriptData.desc,scriptData.hashtags,scriptData.tags,hookForSheet,scriptData.mood,tmpl,cs(scriptData.tts1),cs(scriptData.tts2),cs(scriptData.tts3),cs(scriptData.tts4),imgUrls[0]||"",imgUrls[1]||"",imgUrls[2]||"",imgUrls[3]||"",bgm,isA?"":(vidUrls||[]).join(","),json,"","","",charsStr,isA?"":cs(scriptData.tts5),isA?"":imgUrls[4]||""];
+    const vals=[today.dateStr,chLabel,"렌더중",scriptData.title,scriptData.desc,scriptData.hashtags,scriptData.tags,hookForSheet,scriptData.mood,tmpl,cs(isC?(scriptData.tts||scriptData.tts1||""):scriptData.tts1),cs(isC?"":scriptData.tts2),cs(isC?"":scriptData.tts3),cs(isC?"":scriptData.tts4),imgUrls[0]||"",imgUrls[1]||"",imgUrls[2]||"",imgUrls[3]||"",isC?"":bgm,isA?"":(isC?"":(vidUrls||[]).join(",")),json,"","","",charsStr,(isA||isC)?"":cs(scriptData.tts5),(isA||isC)?"":imgUrls[4]||""];
     const r=await callProxy(cfg.proxyUrl,{action:"writeSheet",sheetId:cfg.sheetId,values:vals});
     if(!r.success) throw new Error(r.error||"Sheets 전송 실패");
     const sheetRow=r.row; // appendRow가 반환한 행 번호
-    addRecentTitle(isA?"A":"B",scriptData.title);
+    addRecentTitle(chLabel,scriptData.title);
 
     // ★ v11.8.0: Creatomate 렌더링 제출
     if(!cfg.creatomateKey){
@@ -1769,7 +1851,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     setTopics(null);
 
     // ═══ 채널B: 2단계 분리 ═══
-    if(!isA){
+    if(isB){
       try{
         let prompt=await _genTopics_B_step1();
         if(rejected.current.length>0) prompt+="\n\n★ 이 주제는 피해라: "+rejected.current.join(", ");
@@ -1928,23 +2010,25 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   // ═══ v11.4.1: autoRun — 풀세트 붙여넣기 (img/vid 있으면 API 0회) ═══
   const autoRun=async(topicText)=>{
     if(!configured){alert("설정에서 API 키를 먼저 입력하세요");return}
-    setPicked(topicText);setAutoError("");setScript(null);setImages(Array(isA?12:SCENE_COUNT_B).fill(null));setVideoUrls(Array(isA?4:SCENE_COUNT_B).fill(null));setSent(false);
+    setPicked(topicText);setAutoError("");setScript(null);setImages(Array(isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(isA?4:isC?0:SCENE_COUNT_B).fill(null));setSent(false);
 
     // 붙여넣기 JSON 파싱
     let inputData=null;
     try{inputData=JSON.parse(topicText)}catch(e){}
 
-    // tts1이 있으면 = 대본이 이미 포함됨
-    if(inputData&&inputData.tts1){
+    // tts1 또는 tts가 있으면 = 대본이 이미 포함됨
+    if(inputData&&(inputData.tts1||inputData.tts)){
       try{
         let data={...inputData};
+        // ★ v11.9.6: 채널C는 tts 단일 필드 → tts1로 통합
+        if(isC&&data.tts&&!data.tts1){data.tts1=data.tts}
         const hasImg=!!(data.img1&&data.img1.length>10);
-        const hasVid=!isA&&!!(data.vid1&&data.vid1.length>10);
-        const sceneCount=isA?4:SCENE_COUNT_B;
-        const imgCount=isA?12:SCENE_COUNT_B; // ★ v11.5.0: 채널A 12장
-        // ★ v11.5.5: 채널A는 Storybook 수동 업로드 → img 프롬프트 불필요, 채널B만 API 호출
+        const hasVid=isB&&!!(data.vid1&&data.vid1.length>10);
+        const sceneCount=isA?4:isC?1:SCENE_COUNT_B;
+        const imgCount=isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B;
+        // ★ v11.5.5: 채널A는 Storybook 수동 업로드, 채널C는 img URL 직접 포함
         if(!hasImg){
-          if(!isA){
+          if(isB){
             setAutoPhase("이미지 프롬프트 생성");
             const imgRaw=await callClaude(cfg.proxyUrl,cfg.claudeKey,_buildImgPrompt_B(data,topicText),false);
             const imgData=_parseJSON(imgRaw);
@@ -1952,19 +2036,19 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           }
         }else{console.log("✅ img 프롬프트 포함됨 → API 스킵")}
         // ★ v11.4.1: vid 프롬프트가 없을 때만 API 호출 (채널B만)
-        if(!isA&&!hasVid){
+        if(isB&&!hasVid){
           setAutoPhase("영상 프롬프트 생성");
           const vidRaw=await callClaude(cfg.proxyUrl,cfg.claudeKey,_buildVidPrompt_B(data,topicText),false);
           const vidData=_parseJSON(vidRaw);
           if(vidData){for(let i=1;i<=sceneCount;i++){if(vidData["vid"+i])data["vid"+i]=vidData["vid"+i]}}
-        }else if(!isA){console.log("✅ vid 프롬프트 포함됨 → API 스킵")}
-        // img fallback (채널B만 — 채널A는 Storybook 수동 업로드)
-        if(!isA){
+        }else if(isB){console.log("✅ vid 프롬프트 포함됨 → API 스킵")}
+        // img fallback (채널B만 — 채널A는 Storybook, 채널C는 Serper URL)
+        if(isB){
           const fallbackImg="A Pixar-style 3D animated household object character with expressive cartoon eyes and white gloved hands standing on a clean wooden table in a small Korean apartment. Warm soft natural lighting from a window, vertical 9:16, no random text no watermarks. Hyper-detailed Pixar 3D animation quality, cinematic shallow depth of field.";
           for(let i=1;i<=imgCount;i++){if(!data["img"+i]||data["img"+i].length<10)data["img"+i]=fallbackImg}
         }
         lastApiTime.current=Date.now();
-        const apiCalls=(!hasImg?1:0)+(!isA&&!hasVid?1:0);
+        const apiCalls=(!hasImg&&isB?1:0)+(isB&&!hasVid?1:0);
         console.log("📊 붙여넣기 모드: API "+apiCalls+"회 호출"+(apiCalls===0?" (풀세트 모드)":""));
         setScript(data);setStep(2);setAutoPhase("대본완료");
       }catch(e){setAutoPhase("에러");setAutoError("프롬프트 처리 실패: "+e.message)}
@@ -1974,7 +2058,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     // 기존 플로우 (대본 생성 포함)
     setAutoPhase("대본");
     try{
-      const scriptData=isA?await _generateScript_A(topicText):await _generateScript_B(topicText);
+      const scriptData=isA?await _generateScript_A(topicText):isC?await _generateScript_C(topicText):await _generateScript_B(topicText);
       lastApiTime.current=Date.now();
       setScript(scriptData);setStep(2);setAutoPhase("대본완료");
     }catch(e){setAutoPhase("에러");setAutoError("대본 실패: "+e.message)}
@@ -1983,7 +2067,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   // ★ v11.7.2: 이미지 생성 — 순차 + 기존 성공분 스킵 (GAS 동시요청 병목 해결)
   const runImages=async()=>{
     if(!script)return;
-    if(isA){showToast("채널A는 📁 이미지 업로드를 사용하세요");return}
+    if(isA||isC){showToast(isA?"채널A는 📁 이미지 업로드를 사용하세요":"채널C는 풀세트에 이미지 URL 포함");return}
     setAutoError("");
     const count=SCENE_COUNT_B;
     const ar="9:16";
@@ -2057,7 +2141,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   const runSend=async()=>{
     if(!script)return;
     // ★ v11.8.0: 채널B는 자막 확정 후에만 전송 가능
-    if(!isA&&subtitles.length>0&&!subConfirmed){showToast("자막을 먼저 확정해주세요");return}
+    if(isB&&subtitles.length>0&&!subConfirmed){showToast("자막을 먼저 확정해주세요");return}
     setAutoPhase("전송");setAutoError("");setRenderUrl("");
     try{
       const result=await _sendToSheets(script,images,videoUrls);
@@ -2077,7 +2161,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   // ★ v11.5.5: 개별 이미지 재생성 — 채널B만 NB2, 채널A는 📁 업로드 안내
   const regenSingleImage=async(idx)=>{
     if(!script||isRunning)return;
-    if(isA){showToast("채널A는 📁 이미지 업로드를 사용하세요");return}
+    if(isA||isC){showToast(isA?"채널A는 📁 이미지 업로드를 사용하세요":"채널C는 이미지 URL 직접 입력");return}
     const prompt=script["img"+(idx+1)];
     if(!prompt){showToast("img"+(idx+1)+" 프롬프트 없음");return}
     setAutoPhase("이미지 "+(idx+1)+" 재생성");setAutoError("");
@@ -2150,31 +2234,32 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           <div style={{display:"flex",gap:6}}>
             <button className={"dk-ch-btn"+(slot==="A"?" active-a":"")} onClick={()=>resetSlot("A")} disabled={isRunning}>A</button>
             <button className={"dk-ch-btn"+(slot==="B"?" active-b":"")+((today.hasBSlot||cfg.testMode)?"":" dis")} onClick={()=>resetSlot("B")} disabled={isRunning||(!today.hasBSlot&&!cfg.testMode)}>B</button>
+            <button className={"dk-ch-btn"+(slot==="C"?" active-c":"")} onClick={()=>resetSlot("C")} disabled={isRunning}>C</button>
           </div>
         </div>
         <div className="dk-side-sec">
           <div className="dk-side-label">PIPELINE</div>
           <div className="dk-pipe">
             <div className="dk-pipe-line"/>
-            <div className={"dk-pipe-step"+(doneScript?" done":autoPhase==="대본"?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">대본</div><div className="dk-pipe-sub">{doneScript?(isA?"4":"5")+"씬 완료":autoPhase==="대본"?"생성 중...":"대기"}</div></div></div>
-            <div className={"dk-pipe-step"+(doneImgCount===(isA?12:SCENE_COUNT_B)?" done":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">{isA?"이미지":"이미지 생성"}</div><div className="dk-pipe-sub">{doneImgCount>0?doneImgCount+"/"+(isA?12:SCENE_COUNT_B):"대기"}</div></div></div>
-            {!isA&&<div className={"dk-pipe-step"+(doneVidCount===SCENE_COUNT_B?" done":(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">영상</div><div className="dk-pipe-sub">{doneVidCount>0?doneVidCount+"/"+SCENE_COUNT_B:"대기"}</div></div></div>}
-            {!isA&&<div className={"dk-pipe-step"+(subConfirmed?" done":autoPhase==="자막 추출 중..."?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">자막</div><div className="dk-pipe-sub">{subConfirmed?"확정":"대기"}</div></div></div>}
+            <div className={"dk-pipe-step"+(doneScript?" done":autoPhase==="대본"?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">대본</div><div className="dk-pipe-sub">{doneScript?(isA?"4":isC?"1":"5")+"씬 완료":autoPhase==="대본"?"생성 중...":"대기"}</div></div></div>
+            <div className={"dk-pipe-step"+(doneImgCount===imgSlotCount?" done":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">{isA?"이미지":isC?"이미지 선택":"이미지 생성"}</div><div className="dk-pipe-sub">{doneImgCount>0?doneImgCount+"/"+imgSlotCount:"대기"}</div></div></div>
+            {isB&&<div className={"dk-pipe-step"+(doneVidCount===SCENE_COUNT_B?" done":(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">영상</div><div className="dk-pipe-sub">{doneVidCount>0?doneVidCount+"/"+SCENE_COUNT_B:"대기"}</div></div></div>}
+            {isB&&<div className={"dk-pipe-step"+(subConfirmed?" done":autoPhase==="자막 추출 중..."?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">자막</div><div className="dk-pipe-sub">{subConfirmed?"확정":"대기"}</div></div></div>}
             <div className={"dk-pipe-step"+(doneSend?" done":autoPhase==="전송"?" active":autoPhase==="에러"?" error":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">렌더링+전송</div><div className="dk-pipe-sub">{doneSend?"완료":"대기"}</div></div></div>
           </div>
         </div>
         <div className="dk-side-sec">
           <div className="dk-side-label">INFO</div>
-          <div className="dk-info-row"><span>채널</span><span>{isA?"A 트렌드":"B 의인화"}</span></div>
+          <div className="dk-info-row"><span>채널</span><span>{isA?"A 트렌드":isC?"C 잡학중독":"B 의인화"}</span></div>
           <div className="dk-info-row"><span>타입</span><span>{displayTmpl(tmpl,isA)}</span></div>
-          <div className="dk-info-row"><span>엔진</span><span>{isA?"TTS+Ken Burns":"Kling O3"}</span></div>
+          <div className="dk-info-row"><span>엔진</span><span>{isA?"TTS+Ken Burns":isC?"TTS+이미지시퀀스":"Kling O3"}</span></div>
           {script&&<div className="dk-info-row"><span>Mood</span><span style={{color:(MOOD_CFG[script.mood]||{}).hook||"#fff"}}>{script.mood}</span></div>}
         </div>
         {autoPhase&&<div className="dk-side-sec">
           <div className="dk-side-label">ACTIONS</div>
-          {autoPhase==="대본완료"&&<>{isA?<button className="dk-act go" onClick={uploadImagesA}>이미지 업로드 →</button>:<button className="dk-act go" onClick={runImages}>이미지 생성 →</button>}<button className="dk-act" onClick={()=>{if(picked)autoRun(picked)}}>대본 재생성</button></>}
-          {autoPhase==="이미지완료"&&<>{isA?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act go" onClick={runVideos}>영상 생성 →</button>}{isA?<button className="dk-act" onClick={uploadImagesA}>재업로드</button>:<button className="dk-act" onClick={runImages}>이미지 재생성</button>}</>}
-          {autoPhase==="영상완료"&&<>{(isA||subConfirmed)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runVideos}>영상 재생성</button></>}
+          {autoPhase==="대본완료"&&<>{isA?<button className="dk-act go" onClick={uploadImagesA}>이미지 업로드 →</button>:isC?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act go" onClick={runImages}>이미지 생성 →</button>}<button className="dk-act" onClick={()=>{if(picked)autoRun(picked)}}>대본 재생성</button></>}
+          {autoPhase==="이미지완료"&&<>{(isA||isC)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act go" onClick={runVideos}>영상 생성 →</button>}{isA?<button className="dk-act" onClick={uploadImagesA}>재업로드</button>:isC?null:<button className="dk-act" onClick={runImages}>이미지 재생성</button>}</>}
+          {autoPhase==="영상완료"&&<>{(isA||isC||subConfirmed)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runVideos}>영상 재생성</button></>}
           {autoPhase==="에러"&&<><button className="dk-act err" onClick={()=>{if(picked)autoRun(picked)}}>재시도</button><button className="dk-act" onClick={()=>setShowManual(true)}>수동</button></>}
         </div>}
       </div>
@@ -2185,8 +2270,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             {isA?(script.hook_line2||script.hook_line1)&&<span className="dk-hook-a">{script.hook_line2||script.hook_line1}</span>
               :<span className="dk-hook-b">{script.hook}</span>}
           </div>
-          {!isA&&script.char1&&<div style={{display:"flex",gap:4}}>{[script.char1,script.char2,script.char3,script.char4,script.char5].filter(Boolean).map((c,i)=><span key={i} className="dk-tag">{c}</span>)}</div>}
-        </div>:<div className="dk-title-bar"><span style={{fontSize:15,fontWeight:700}}>{isA?"채널A 트렌드":"채널B 의인화드라마"}</span><span style={{fontSize:12,color:"#666"}}>{isA?"정지이미지+TTS":"Kling×"+SCENE_COUNT_B}</span></div>}
+          {isB&&script.char1&&<div style={{display:"flex",gap:4}}>{[script.char1,script.char2,script.char3,script.char4,script.char5].filter(Boolean).map((c,i)=><span key={i} className="dk-tag">{c}</span>)}</div>}
+        </div>:<div className="dk-title-bar"><span style={{fontSize:15,fontWeight:700}}>{isA?"채널A 트렌드":isC?"채널C 잡학중독":"채널B 의인화드라마"}</span><span style={{fontSize:12,color:"#666"}}>{isA?"정지이미지+TTS":isC?"이미지시퀀스+TTS":"Kling×"+SCENE_COUNT_B}</span></div>}
         {autoPhase&&!["대본완료","이미지완료","영상완료","완료"].includes(autoPhase)&&autoPhase!=="에러"&&<div className="dk-status">{autoPhase==="대본"?"✍️ 대본 생성 중...":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?"🎨 "+autoPhase:(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")?"🎬 "+autoPhase:autoPhase==="자막 추출 중..."?"🔤 자막 추출 중...":autoPhase==="전송"?"📤 전송 중...":autoPhase}</div>}
         {autoPhase==="에러"&&<div className="dk-status err">{autoError}</div>}
         {!script&&<div style={{padding:"24px 24px"}}>
@@ -2194,7 +2279,20 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           <textarea className="input-area" value={picked} onChange={e=>setPicked(e.target.value)} placeholder='{"title":"...", "tts1":"...", "img1":"...", ...}' rows={6} style={{fontFamily:"monospace",fontSize:12}}/>
           <button className="btn btn-purple" onClick={()=>{if(picked.trim())autoRun(picked.trim())}} disabled={!picked.trim()||isRunning} style={{marginTop:10,width:"100%",padding:"12px 0",fontSize:14}}>🚀 시작</button>
         </div>}
-        {script&&<div className="dk-cards">{Array.from({length:isA?4:SCENE_COUNT_B},(_,i)=>i).map(i=>{
+        {script&&(isC?
+          <div style={{padding:"16px 24px"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#fbbf24",marginBottom:8}}>📝 나레이션 ({(script.tts||script.tts1||"").length}자)</div>
+            <div className="result-box" style={{marginBottom:12}}>{(script.tts||script.tts1||"").replace(/\|/g," ")}</div>
+            <div style={{fontSize:13,fontWeight:700,color:"#aaa",marginBottom:8}}>🖼️ 이미지 ({doneImgCount}/{imgSlotCount})</div>
+            <div className="img-grid" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
+              {Array.from({length:imgSlotCount},(_,i)=>{const has=!!images[i];return(
+                <div key={i} className="img-cell" style={{border:has?"1px solid #4ade80":"1px solid #222"}}>
+                  {has?<img src={images[i]} alt="" style={{aspectRatio:"9/16"}} onClick={()=>setModalImg(images[i])}/>:<div className="img-placeholder" style={{aspectRatio:"9/16"}}>{i+1}</div>}
+                </div>
+              )})}
+            </div>
+          </div>
+        :<div className="dk-cards">{Array.from({length:isA?4:SCENE_COUNT_B},(_,i)=>i).map(i=>{
           const tt=(script["tts"+(i+1)]||"").replace(/\|/g," ");
           const ch=!isA?script["char"+(i+1)]:"";
           const imgBase=isA?i*3:i; // ★ v11.9.2: 채널A 씬당 3이미지 올바른 인덱스
@@ -2225,8 +2323,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             </div>
             <div className="dk-card-tts">{tt}</div>
           </div>);
-        })}</div>}
-        {autoPhase==="영상완료"&&!isA&&subtitles.length>0&&!subConfirmed&&<div style={{margin:"0 24px 16px",background:"#1a1a2e",border:"1px solid #444",borderRadius:10,padding:14}}>
+        })}</div>)}
+        {autoPhase==="영상완료"&&isB&&subtitles.length>0&&!subConfirmed&&<div style={{margin:"0 24px 16px",background:"#1a1a2e",border:"1px solid #444",borderRadius:10,padding:14}}>
           <div style={{fontWeight:700,marginBottom:8,color:"#FFD700",fontSize:14}}>🔤 자막 미리보기</div>
           {subtitles.map((sc,si)=><div key={si} style={{marginBottom:10}}><div style={{fontSize:12,color:"#aaa",marginBottom:4}}>씬 {si+1}</div>{sc.length===0?<div style={{fontSize:11,color:"#666"}}>자막 없음</div>:<div style={{display:"flex",flexWrap:"wrap",gap:4}}>{sc.map((ch,ci)=><div key={ci} style={{background:"#2a2a3e",borderRadius:4,padding:"4px 8px",display:"flex",alignItems:"center",gap:4}}><input value={ch.text} onChange={e=>{const n=subtitles.map((s,ii)=>ii===si?s.map((c,j)=>j===ci?{...c,text:e.target.value}:c):s);setSubtitles(n)}} style={{background:"transparent",border:"none",borderBottom:"1px solid #555",color:"#fff",fontSize:13,width:Math.max(50,ch.text.length*15)+"px",outline:"none"}}/><span style={{fontSize:9,color:"#666"}}>{ch.start.toFixed(1)}s</span></div>)}</div>}</div>)}
           <button className="btn" onClick={()=>{setSubConfirmed(true);showToast("✅ 자막 확정!")}} style={{width:"100%",marginTop:8,background:"#FFD700",color:"#000",fontWeight:700}}>✅ 자막 확정</button>
@@ -2238,21 +2336,21 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     /* ═══ MOBILE (기존 유지) ═══ */
     <div className="pad">
 
-      {/* ═══ 슬롯 바: A / B ═══ */}
+      {/* ═══ 슬롯 바: B / C (A 휴면) ═══ */}
       <div className="slot-bar">
-        <button className={"slot-btn"+(slot==="A"?" active":"")} onClick={()=>resetSlot("A")} disabled={isRunning}>
-          <span className="ch-a">채널A</span> 트렌드<small>{scheduleTime!=="—"&&slot==="A"?scheduleTime:SCHEDULE_A[today.isWeekday?"weekday":"weekend"]}</small>
-        </button>
         <button className={"slot-btn"+(slot==="B"?" active":"")+((today.hasBSlot||cfg.testMode)?"":" disabled-slot")} onClick={()=>resetSlot("B")} disabled={isRunning||(!today.hasBSlot&&!cfg.testMode)}>
-          <span className="ch-b">채널B</span> {(today.hasBSlot||cfg.testMode)?"의인화드라마":"오늘 없음"}<small>{(today.hasBSlot||cfg.testMode)?(SCHEDULE_B[today.dow]||"테스트"):"화/목/토"}</small>
+          <span className="ch-b">채널B</span> {(today.hasBSlot||cfg.testMode)?"의인화":"오늘 없음"}<small>{(today.hasBSlot||cfg.testMode)?(SCHEDULE_B[today.dow]||"테스트"):"수금토일"}</small>
+        </button>
+        <button className={"slot-btn"+(slot==="C"?" active":"")} onClick={()=>resetSlot("C")} disabled={isRunning}>
+          <span className="ch-c">채널C</span> 잡학중독<small>{SCHEDULE_C}</small>
         </button>
       </div>
 
       {/* 채널+템플릿 정보 */}
       <div className="box">
         <div className="info-row">
-          <div><span className={isA?"ch-a":"ch-b"} style={{fontWeight:800}}>{isA?"채널A 트렌드":"채널B 의인화드라마"}</span><span style={{color:"#555",margin:"0 8px"}}>·</span><span style={{color:"#aaa",fontWeight:600}}>{displayTmpl(tmpl,isA)}</span></div>
-          <div style={{fontSize:11,color:"#666"}}>{isA?"정지이미지+TTS":"Kling영상×5 나열형"}</div>
+          <div><span className={isA?"ch-a":isC?"ch-c":"ch-b"} style={{fontWeight:800}}>{isA?"채널A 트렌드":isC?"채널C 잡학중독":"채널B 의인화드라마"}</span><span style={{color:"#555",margin:"0 8px"}}>·</span><span style={{color:"#aaa",fontWeight:600}}>{displayTmpl(tmpl,isA)}</span></div>
+          <div style={{fontSize:11,color:"#666"}}>{isA?"정지이미지+TTS":isC?"이미지시퀀스+TTS":"Kling영상×5 나열형"}</div>
         </div>
       </div>
 
@@ -2276,9 +2374,9 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           <div className="ap-title">{autoPhase==="완료"?"✅ 완료":autoPhase==="에러"?"⚠️ 오류":["대본완료","이미지완료","영상완료"].includes(autoPhase)?"⏸ 확인 후 다음 단계":"⚡ 실행 중..."}</div>
           <div className="ap-steps">
             <div className={"ap-step"+(doneScript?" done":autoPhase==="대본"?" active":"")}/>
-            <div className={"ap-step"+(doneImgCount===(isA?12:SCENE_COUNT_B)?" done":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?" active":"")}/>
-            {!isA&&<div className={"ap-step"+(doneVidCount===SCENE_COUNT_B?" done":(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")?" active":"")}/>}
-            {!isA&&<div className={"ap-step"+(subConfirmed?" done":autoPhase==="자막 추출 중..."?" active":"")}/>}
+            <div className={"ap-step"+(doneImgCount===imgSlotCount?" done":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?" active":"")}/>
+            {isB&&<div className={"ap-step"+(doneVidCount===SCENE_COUNT_B?" done":(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")?" active":"")}/>}
+            {isB&&<div className={"ap-step"+(subConfirmed?" done":autoPhase==="자막 추출 중..."?" active":"")}/>}
             <div className={"ap-step"+(doneSend?" done":autoPhase==="전송"?" active":autoPhase==="에러"?" error":"")}/>
           </div>
           <div className={"ap-status"+(autoPhase==="에러"?" error":"")}>
@@ -2289,9 +2387,9 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             {autoPhase==="이미지완료"&&(isA?"✅ 이미지 완료 — 확인 후 전송":"✅ 이미지 완료 — 확인 후 영상 생성")}
             {(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")&&"🎬 "+autoPhase}
             {autoPhase==="자막 추출 중..."&&"🔤 자막 추출 중..."}
-            {autoPhase==="영상완료"&&(subConfirmed||isA?"✅ 영상 완료 — 확인 후 전송":"✅ 영상 완료 — 자막 확인 후 전송")}
+            {autoPhase==="영상완료"&&(subConfirmed||(isA||isC)?"✅ 영상 완료 — 확인 후 전송":"✅ 영상 완료 — 자막 확인 후 전송")}
             {autoPhase==="전송"&&"📤 Sheets 전송 중..."}
-            {autoPhase==="완료"&&(isA?"대본→이미지→전송 완료!":"대본→이미지→영상→전송 완료!")}
+            {autoPhase==="완료"&&(isA?"대본→이미지→전송 완료!":isC?"대본→이미지→전송 완료!":"대본→이미지→영상→전송 완료!")}
             {autoPhase==="에러"&&autoError}
           </div>
           {/* 단계별 확인 버튼 */}
@@ -2299,14 +2397,16 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             <div style={{marginTop:8,display:"flex",gap:6}}>
               <button className="btn btn-dark" onClick={()=>{if(picked)autoRun(picked)}} style={{flex:1}}>🔄 대본 재생성</button>
               {isA?<button className="btn btn-green" onClick={uploadImagesA} style={{flex:1}}>📁 이미지 업로드</button>
+                   :isC?<button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
                    :<button className="btn btn-purple" onClick={runImages} style={{flex:1}}>🎨 이미지 생성 →</button>}
             </div>
           )}
           {autoPhase==="이미지완료"&&(
             <div style={{marginTop:8,display:"flex",gap:6}}>
               {isA?<button className="btn btn-dark" onClick={uploadImagesA} style={{flex:1}}>📁 이미지 재업로드</button>
+                   :isC?null
                    :<button className="btn btn-dark" onClick={runImages} style={{flex:1}}>🔄 이미지 재생성</button>}
-              {isA?(
+              {(isA||isC)?(
                 <button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
               ):(
                 <button className="btn btn-purple" onClick={runVideos} style={{flex:1}}>🎬 영상 생성 →</button>
@@ -2316,7 +2416,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           {autoPhase==="영상완료"&&(
             <div style={{marginTop:8}}>
               {/* ★ v11.8.0: 채널B 자막 미리보기/수정 */}
-              {!isA&&subtitles.length>0&&!subConfirmed&&(
+              {isB&&subtitles.length>0&&!subConfirmed&&(
                 <div style={{background:"#1a1a2e",border:"1px solid #444",borderRadius:8,padding:12,marginBottom:8}}>
                   <div style={{fontWeight:700,marginBottom:8,color:"#FFD700",fontSize:14}}>🔤 자막 미리보기 — 클릭하여 수정</div>
                   {subtitles.map((sc,si)=>(
@@ -2377,13 +2477,13 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
                 </>}
                 <span className="lbl">MOOD</span><span style={{color:(MOOD_CFG[script.mood]||{}).hook||"#fff"}}>{script.mood}</span>
                 {/* v11.3.0: 5사물 캐릭터 표시 */}
-                {!isA&&script.char1&&<><span className="lbl">캐릭터</span><span className="val" style={{color:"#4ade80"}}>{[script.char1,script.char2,script.char3,script.char4,script.char5].filter(Boolean).join(" · ")}</span></>}
+                {isB&&script.char1&&<><span className="lbl">캐릭터</span><span className="val" style={{color:"#4ade80"}}>{[script.char1,script.char2,script.char3,script.char4,script.char5].filter(Boolean).join(" · ")}</span></>}
               </div>
               <div style={{borderTop:"1px solid #1a1a28",marginTop:8,paddingTop:8}}>
                 {/* v11.3.0: 채널B 5씬 + 캐릭터명, 채널A 4씬 */}
                 {Array.from({length:isA?4:SCENE_COUNT_B},(_,i)=>"tts"+(i+1)).map((k,i)=>(
                   <div key={k} className="scene-item">
-                    <span className="scene-num">씬{i+1}{!isA&&script["char"+(i+1)]&&<span style={{color:"#4ade80",marginLeft:4,fontSize:10}}>({script["char"+(i+1)]})</span>}</span>
+                    <span className="scene-num">씬{i+1}{isB&&script["char"+(i+1)]&&<span style={{color:"#4ade80",marginLeft:4,fontSize:10}}>({script["char"+(i+1)]})</span>}</span>
                     <span className="scene-txt">{(script[k]||"").replace(/\|/g," ")}<span style={{color:"#555",marginLeft:4,fontSize:10}}>{(script[k]||"").replace(/\|/g,"").length}자</span></span>
                   </div>
                 ))}
@@ -2398,7 +2498,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
                 {Array.from({length:isA?12:SCENE_COUNT_B},(_,i)=>i).map(i=>(
                   <div key={i} className={"img-cell"+(isA?" ratio-1":"")}>
                     {images[i]?<img src={images[i]} alt={"IMG"+(i+1)} onClick={()=>setModalImg(images[i])}/>:<div className={"img-placeholder"+(isA?" ratio-1":"")}>{"IMG"+(i+1)}</div>}
-                    {!isA&&images[i]&&(
+                    {isB&&images[i]&&(
                       <div className={"vid-badge"+(videoUrls[i]?" done":" pending")} style={{cursor:"pointer"}} onClick={()=>!isRunning&&videoUrls[i]&&window.open(videoUrls[i],"_blank")}>
                         {videoUrls[i]?"🎬완료":"⏳대기"}
                       </div>
@@ -2406,7 +2506,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
                     <div className="img-btns">
                       {script&&script["img"+(i+1)]&&<button onClick={()=>{cp(script["img"+(i+1)]);showToast("IMG"+(i+1)+" 프롬프트 복사")}}>📋</button>}
                       {script&&script["img"+(i+1)]&&!isRunning&&<button onClick={()=>regenSingleImage(i)} title={"IMG"+(i+1)+" 재생성"}>🔄</button>}
-                      {!isA&&videoUrls[i]&&!isRunning&&<button onClick={()=>regenSingleVideo(i)} title={"VID"+(i+1)+" 재생성"}>🎬</button>}
+                      {isB&&videoUrls[i]&&!isRunning&&<button onClick={()=>regenSingleVideo(i)} title={"VID"+(i+1)+" 재생성"}>🎬</button>}
                     </div>
                   </div>
                 ))}
