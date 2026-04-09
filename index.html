@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.9.4</title>
+<title>Shorts 관제탑 v11.9.5</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -514,14 +514,20 @@ function buildJSON_B(videoUrls,tts,mood,hook,subtitleData){
   const subStyle={y:"78%",width:"88%",height:"20%",x_alignment:"50%",y_alignment:"50%",
     fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",
     font_family:"Noto Sans KR",font_weight:"900",font_size:"6.5 vmin",line_height:"130%"};
+  // ★ v11.9.5: 검은화면 이중 방어 — ① video trim_duration:9 ② 자막 시간 9초 캡
+  // 원인: Kling multi_prompt 오디오트랙 메타데이터 초과 → Whisper 마지막 청크 end 비정상 → composition 확장
+  const SCENE_MAX=9; // 영상 8초 + 여유 1초
   const scenes=Array.from({length:SCENE_COUNT_B},(_,i)=>{
     const vidName="VID-"+(i+1);
-    const els=[{name:vidName,type:"video",source:videoUrls[i]||"",width:"100%",height:"100%",fit:"cover",volume:"100%"}];
-    // ★ v11.8.0: subtitleData 있으면 수동 자막, 없으면 transcript_source 폴백
+    const els=[{name:vidName,type:"video",source:videoUrls[i]||"",width:"100%",height:"100%",fit:"cover",volume:"100%",trim_duration:SCENE_MAX}];
+    // ★ v11.8.0+v11.9.5: subtitleData 시간 캡핑 — SCENE_MAX 초과 자막 차단
     if(subtitleData&&subtitleData[i]&&subtitleData[i].length>0){
       subtitleData[i].forEach(ch=>{
+        if(ch.start>=SCENE_MAX) return;
+        const cappedEnd=Math.min(ch.end,SCENE_MAX);
+        const dur=Math.max(0.3,cappedEnd-ch.start);
         els.push({type:"text",...subStyle,text:ch.text,
-          time:ch.start+" s",duration:Math.max(0.3,ch.end-ch.start)+" s",
+          time:ch.start+" s",duration:dur+" s",
           animations:[{time:"start",duration:"0.1 s",type:"fade"},{time:"end",duration:"0.1 s",type:"fade",reversed:true}]});
       });
     }else{
@@ -631,7 +637,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.4</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.5</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"A+B":"A only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -1326,8 +1332,8 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     }
   };
 
-  // ═══ ★ v11.9.4: 채널B 전용 — Kling Omni 3.0 Standard I2V ═══
-  // ★ v11.9.4: cfg_scale 0.5 + multi_prompt 멀티샷 자동 파싱 + elements 지원
+  // ═══ ★ v11.9.5: 채널B 전용 — Kling Omni 3.0 Standard I2V ═══
+  // ★ v11.9.5: cfg_scale 0.5 + multi_prompt 멀티샷 자동 파싱 + elements 지원
   // vid 프롬프트에 [Shot1:2s] 마커가 있으면 자동으로 multi_prompt 분리
   const _parseMultiShots=(vidPrompt)=>{
     const regex=/\[Shot\s*(\d+)\s*:\s*(\d+)\s*s?\s*\]/gi;
@@ -1348,7 +1354,7 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     const fullPrompt=(vidPrompt||"");
     const dur=calcDuration(ttsText);
     const sceneLabel="영상 "+(sceneIdx!=null?(sceneIdx+1)+"/"+SCENE_COUNT_B:"");
-    // ★ v11.9.4: multi_prompt 자동 파싱
+    // ★ v11.9.5: multi_prompt 자동 파싱
     const shots=_parseMultiShots(fullPrompt);
     if(shots){
       console.log("🎬 Kling O3 멀티샷 제출: "+shots.length+"샷 ("+shots.map(s=>s.duration+"s").join("+")+")");
