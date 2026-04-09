@@ -207,7 +207,7 @@ const BGM={urgent:["https://drive.google.com/uc?export=download&confirm=t&id=1Cz
 const VID_A="Mx48CWClvl522or3Frvp"; // ElevenLabs 채널A SEGU 보이스
 const VID_C="lO4E4qxAvq4BhWUWF8Ci"; // ElevenLabs 채널C JasonK 보이스
 const SCENE_COUNT_B=5; // v11.3.0: 채널B 나열형 5상황 (8초×5=40초)
-const IMG_COUNT_C=7; // 채널C: 이미지 6~7장
+const IMG_COUNT_C=14; // 채널C: 3초×14장=42초
 
 // ★ v11.6.0: 웹 호스팅용 기본값 — 새 기기에서도 자동 연결
 const DEFAULT_PROXY_URL="https://script.google.com/macros/s/AKfycbySaIdHp5x1klFIMfGCr83hHLVMUaRnzzl98zgARyiQl8RyP-nnsxwpMKS0aSWh3hWZ/exec";
@@ -1370,7 +1370,7 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
 
 [출력 JSON]
 {
-  "title": "40자이내 #shorts",
+  "title": "40자이내 (★ #shorts 붙이지 마)",
   "tts": "전체 나레이션 160~200자",
   "hook_line1": "수식어 (7~8자)",
   "hook_line2": "핵심 주제 (7~8자)",
@@ -2284,7 +2284,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             <div style={{fontSize:13,fontWeight:700,color:"#fbbf24",marginBottom:8}}>📝 나레이션 ({(script.tts||script.tts1||"").length}자)</div>
             <div className="result-box" style={{marginBottom:12}}>{(script.tts||script.tts1||"").replace(/\|/g," ")}</div>
             <div style={{fontSize:13,fontWeight:700,color:"#aaa",marginBottom:8}}>🖼️ 이미지 ({doneImgCount}/{imgSlotCount})</div>
-            <div className="img-grid" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
+            <div className="img-grid" style={{gridTemplateColumns:"repeat(7,1fr)"}}>
               {Array.from({length:imgSlotCount},(_,i)=>{const has=!!images[i];return(
                 <div key={i} className="img-cell" style={{border:has?"1px solid #4ade80":"1px solid #222"}}>
                   {has?<img src={images[i]} alt="" style={{aspectRatio:"9/16"}} onClick={()=>setModalImg(images[i])}/>:<div className="img-placeholder" style={{aspectRatio:"9/16"}}>{i+1}</div>}
