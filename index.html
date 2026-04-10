@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.10.4</title>
+<title>Shorts 관제탑 v11.10.5</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -583,8 +583,13 @@ function buildJSON_C(imgUrls,tts,hookL1,hookL2,voiceId,audioUrl,whisperChunks){
       width:"110%",height:"110%",fit:"cover",
       animations:[{type:"scale",start_scale:"100%",end_scale:"105%",easing:"linear"}]};
   });
-  // ★ v11.10.0: TTS 글자수 기반 duration 자동 계산 (초당 ~6자) — 42초 하드코딩 제거
-  const estDuration=Math.max(20,Math.round(tts.length/6));
+  // ★ v11.10.4: Whisper 있으면 실제 오디오 길이 사용, 없으면 글자수 추정
+  let estDuration;
+  if(whisperChunks&&whisperChunks.length>0){
+    estDuration=Math.ceil(whisperChunks[whisperChunks.length-1].end)+1;
+  }else{
+    estDuration=Math.max(20,Math.round(tts.length/6));
+  }
   const perImg=estDuration/imgCount;
   imgEls.forEach((el,i)=>{el.time=parseFloat((i*perImg).toFixed(1));el.duration=parseFloat(perImg.toFixed(1))});
 
@@ -604,8 +609,9 @@ function buildJSON_C(imgUrls,tts,hookL1,hookL2,voiceId,audioUrl,whisperChunks){
 
   const compEls=[...imgEls,...subEls];
 
-  // ★ v11.10.0: audioUrl 있으면 프리렌더 오디오 사용 (재생성 없음), 없으면 [tts] 폴백
-  const audioSource=audioUrl?audioUrl:("[tts]"+tts+"[/tts]");
+  // ★ v11.10.4: audioUrl 있으면 프리렌더 오디오 사용, 없으면 [tts] 폴백 (발음 교정 적용)
+  const ttsSpeech=unitToKorean(tts);
+  const audioSource=audioUrl?audioUrl:("[tts]"+ttsSpeech+"[/tts]");
   const audioEl=audioUrl
     ?{type:"audio",name:"VO",source:audioSource}
     :{type:"audio",name:"VO",source:audioSource,provider:prov};
@@ -711,7 +717,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.10.4</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.10.5</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"B+C":"C only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -2216,12 +2222,14 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     const tts=script.tts||script.tts1||"";
     if(!tts){showToast("TTS 텍스트 없음");return}
     if(!cfg.creatomateKey){showToast("Creatomate API 키 필요");return}
+    // ★ v11.10.4: unitToKorean 발음 교정 적용 (채널A와 동일)
+    const ttsSpeech=unitToKorean(tts);
 
     // ── Step 1: Creatomate 오디오 프리렌더 ──
     setAutoPhase("음성 생성 중...");
     const prov="elevenlabs model_id=eleven_multilingual_v2 voice_id="+VID_C+" stability=0.55 similarity_boost=0.70 style=0.15 use_speaker_boost=true";
     const preJson=JSON.stringify({output_format:"mp4",width:64,height:64,fill_color:"#000000",elements:[
-      {type:"audio",source:"[tts]"+tts+"[/tts]",provider:prov}
+      {type:"audio",source:"[tts]"+ttsSpeech+"[/tts]",provider:prov}
     ]});
     try{
       const renderRes=await callProxy(cfg.proxyUrl,{action:"submitRender",creatomateKey:cfg.creatomateKey,source:preJson});
@@ -2239,7 +2247,11 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           setAutoPhase("자막 추출 중...");
           const wRes=await callProxy(cfg.proxyUrl,{action:"whisperTranscribe",falApiKey:cfg.falKey,audioUrl:check.url,language:"ko"},120000);
           if(!wRes.success) throw new Error("Whisper 실패: "+(wRes.error||""));
-          const words=wRes.words||[];
+          // ★ v11.10.4: Whisper "TTS" 환각 + 태그 잔여물 필터링
+          const words=(wRes.words||[]).filter(w=>{
+            const t=(w.text||"").trim();
+            return t && t.toLowerCase()!=="tts" && !t.match(/^\[.*\]$/);
+          });
           // 10자 이내 청크로 묶기
           const chunks=[];let buf="";let bufStart=0;
           for(const w of words){
