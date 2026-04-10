@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.10.2</title>
+<title>Shorts 관제탑 v11.10.4</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -581,7 +581,7 @@ function buildJSON_C(imgUrls,tts,hookL1,hookL2,voiceId,audioUrl,whisperChunks){
   const imgEls=validImgs.map((url,i)=>{
     return {type:"image",source:url,time:null,duration:null,
       width:"110%",height:"110%",fit:"cover",
-      animations:[{type:"scale",time:0,duration:null,start_scale:"100%",end_scale:"105%",easing:"linear"}]};
+      animations:[{type:"scale",start_scale:"100%",end_scale:"105%",easing:"linear"}]};
   });
   // ★ v11.10.0: TTS 글자수 기반 duration 자동 계산 (초당 ~6자) — 42초 하드코딩 제거
   const estDuration=Math.max(20,Math.round(tts.length/6));
@@ -711,7 +711,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.10.2</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.10.4</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"B+C":"C only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -2061,6 +2061,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         // ★ v11.10.0: 채널C images 배열 파싱 → imageSpecs에 저장
         if(isC&&Array.isArray(data.images)&&data.images.length>0){
           setImageSpecs(data.images);
+          setImages(Array(data.images.length).fill(null)); // ★ v11.10.3: imageSpecs 크기에 맞춤
           console.log("📸 채널C 이미지 스펙 "+data.images.length+"장 파싱 (serper:"+data.images.filter(s=>s.type==="serper").length+" / nb2:"+data.images.filter(s=>s.type==="nb2").length+")");
         }
         const hasImg=isC?false:!!(data.img1&&data.img1.length>10);
@@ -2190,7 +2191,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         const newSpecs=[...imageSpecs];newSpecs[idx]={...newSpecs[idx],keyword:newKeyword};setImageSpecs(newSpecs);
         showToast("✅ IMG"+(idx+1)+" 재검색 완료");
       }else{showToast("❌ 검색 결과 없음")}
-      setAutoPhase(images.every(u=>u)?"이미지완료":"대본완료");
+      setAutoPhase(images.filter(u=>u).length>=imgSlotCount?"이미지완료":"대본완료");
     }catch(e){setAutoPhase("에러");setAutoError("재검색 실패: "+e.message)}
   };
   const regenNB2ImageC=async(idx)=>{
@@ -2203,7 +2204,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
       const url=await _generateImageNB2(prompt,"9:16");
       const newImgs=[...images];newImgs[idx]=url;setImages(newImgs);
       showToast("✅ IMG"+(idx+1)+" NB2 재생성 완료");
-      setAutoPhase(newImgs.every(u=>u)?"이미지완료":"대본완료");
+      setAutoPhase(newImgs.filter(u=>u).length>=imgSlotCount?"이미지완료":"대본완료");
     }catch(e){setAutoPhase("에러");setAutoError("NB2 재생성 실패: "+e.message)}
   };
 
@@ -2219,7 +2220,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     // ── Step 1: Creatomate 오디오 프리렌더 ──
     setAutoPhase("음성 생성 중...");
     const prov="elevenlabs model_id=eleven_multilingual_v2 voice_id="+VID_C+" stability=0.55 similarity_boost=0.70 style=0.15 use_speaker_boost=true";
-    const preJson=JSON.stringify({output_format:"mp3",elements:[
+    const preJson=JSON.stringify({output_format:"mp4",width:64,height:64,fill_color:"#000000",elements:[
       {type:"audio",source:"[tts]"+tts+"[/tts]",provider:prov}
     ]});
     try{
@@ -2437,8 +2438,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           {autoPhase==="자막완료"&&isC&&<>{subConfirmed?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runTtsWhisperC}>음성 재생성</button></>}
           {autoPhase==="영상완료"&&<>{(isA||subConfirmed)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runVideos}>영상 재생성</button></>}
           {autoPhase==="에러"&&<>{isC?(
-            script&&!images.every(u=>u)?<button className="dk-act err" onClick={runImagesC}>이미지 재수집</button>
-            :images.every(u=>u)&&!ttsAudioUrl?<button className="dk-act err" onClick={runTtsWhisperC}>음성+자막 재시도</button>
+            script&&doneImgCount<imgSlotCount?<button className="dk-act err" onClick={runImagesC}>이미지 재수집</button>
+            :doneImgCount>=imgSlotCount&&!ttsAudioUrl?<button className="dk-act err" onClick={runTtsWhisperC}>음성+자막 재시도</button>
             :ttsAudioUrl&&subConfirmed?<button className="dk-act err" onClick={runSend}>전송 재시도</button>
             :<button className="dk-act err" onClick={()=>{if(picked)autoRun(picked)}}>재시도</button>
           ):<button className="dk-act err" onClick={()=>{if(picked)autoRun(picked)}}>재시도</button>}<button className="dk-act" onClick={()=>setShowManual(true)}>수동</button></>}
@@ -2698,8 +2699,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             <div style={{marginTop:8,display:"flex",gap:6}}>
               <button className="btn btn-dark" onClick={()=>setShowManual(true)} style={{flex:1}}>수동 모드</button>
               {isC?(
-                script&&!images.every(u=>u)?<button className="btn btn-red" onClick={runImagesC} style={{flex:1}}>이미지 재수집</button>
-                :images.every(u=>u)&&!ttsAudioUrl?<button className="btn btn-red" onClick={runTtsWhisperC} style={{flex:1}}>음성+자막 재시도</button>
+                script&&doneImgCount<imgSlotCount?<button className="btn btn-red" onClick={runImagesC} style={{flex:1}}>이미지 재수집</button>
+                :doneImgCount>=imgSlotCount&&!ttsAudioUrl?<button className="btn btn-red" onClick={runTtsWhisperC} style={{flex:1}}>음성+자막 재시도</button>
                 :ttsAudioUrl&&subConfirmed?<button className="btn btn-green" onClick={runSend} style={{flex:1}}>전송 재시도</button>
                 :<button className="btn btn-red" onClick={()=>{if(picked)autoRun(picked)}} style={{flex:1}}>재시도</button>
               ):autoError.includes("전송 실패")&&script?(
