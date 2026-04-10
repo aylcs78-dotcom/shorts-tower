@@ -572,34 +572,46 @@ function buildJSON_B(videoUrls,tts,mood,hook,subtitleData){
   ]});
 }
 
-// ═══ ★ v11.9.6: buildJSON_C — 채널C 잡학중독: 단일 나레이션 + 이미지 시퀀스 ═══
-function buildJSON_C(imgUrls,tts,hookL1,hookL2,voiceId){
+// ═══ ★ v11.10.0: buildJSON_C — 채널C 잡학중독: 단일 나레이션 + 이미지 시퀀스 ═══
+// ★ v11.10.0: Creatomate 프리렌더 오디오 URL + Whisper 자막 사용
+function buildJSON_C(imgUrls,tts,hookL1,hookL2,voiceId,audioUrl,whisperChunks){
   const prov="elevenlabs model_id=eleven_multilingual_v2 voice_id="+(voiceId||VID_C)+" stability=0.55 similarity_boost=0.70 style=0.15 use_speaker_boost=true";
   const validImgs=imgUrls.filter(u=>u&&u.length>5);
   const imgCount=validImgs.length||1;
   const imgEls=validImgs.map((url,i)=>{
-    const dur=null; // 전체를 이미지 수로 균등 분할 — Creatomate가 자동 계산
-    return {type:"image",source:url,time:(i===0?0:null),duration:dur,
+    return {type:"image",source:url,time:null,duration:null,
       width:"110%",height:"110%",fit:"cover",
       animations:[{type:"scale",time:0,duration:null,start_scale:"100%",end_scale:"105%",easing:"linear"}]};
   });
-  // 이미지에 time 계산: TTS 전체 길이를 모르므로, 각 이미지 duration을 생략하면 Creatomate가 오디오에 맞춰 균등 분배
-  // → 안전하게 직접 time 배분: 42초 기준 균등
-  const estDuration=42;
+  // ★ v11.10.0: TTS 글자수 기반 duration 자동 계산 (초당 ~6자) — 42초 하드코딩 제거
+  const estDuration=Math.max(20,Math.round(tts.length/6));
   const perImg=estDuration/imgCount;
   imgEls.forEach((el,i)=>{el.time=parseFloat((i*perImg).toFixed(1));el.duration=parseFloat(perImg.toFixed(1))});
 
-  const compEls=[
-    ...imgEls,
-    {type:"text",transcript_source:"VO",transcript_maximum_length:10,transcript_split:"word",
-      y:"85%",width:"90%",x_alignment:"50%",y_alignment:"50%",
-      fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",
-      font_family:"Noto Sans KR",font_weight:"900",font_size:"8 vmin",
-      background_color:"rgba(0,0,0,0.7)",background_x_padding:"25%",background_y_padding:"20%",background_border_radius:"10%"}
-  ];
+  // ★ v11.10.0: Whisper 자막 청크 → Creatomate text element (정확한 타임스탬프)
+  const subStyle={y:"85%",width:"90%",x_alignment:"50%",y_alignment:"50%",
+    fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",
+    font_family:"Noto Sans KR",font_weight:"900",font_size:"8 vmin",
+    background_color:"rgba(0,0,0,0.7)",background_x_padding:"25%",background_y_padding:"20%",background_border_radius:"10%"};
+  let subEls=[];
+  if(whisperChunks&&whisperChunks.length>0){
+    subEls=whisperChunks.map(ch=>({type:"text",...subStyle,text:ch.text,
+      time:ch.start+" s",duration:Math.max(0.3,ch.end-ch.start).toFixed(1)+" s",
+      animations:[{time:"start",duration:"0.1 s",type:"fade"},{time:"end",duration:"0.1 s",type:"fade",reversed:true}]}));
+  }else{
+    subEls=makeSubtitleChunks(tts,estDuration,subStyle);
+  }
+
+  const compEls=[...imgEls,...subEls];
+
+  // ★ v11.10.0: audioUrl 있으면 프리렌더 오디오 사용 (재생성 없음), 없으면 [tts] 폴백
+  const audioSource=audioUrl?audioUrl:("[tts]"+tts+"[/tts]");
+  const audioEl=audioUrl
+    ?{type:"audio",name:"VO",source:audioSource}
+    :{type:"audio",name:"VO",source:audioSource,provider:prov};
 
   return JSON.stringify({output_format:"mp4",width:1080,height:1920,fill_color:"#000000",elements:[
-    {type:"audio",name:"VO",source:"[tts]"+tts+"[/tts]",provider:prov},
+    audioEl,
     {type:"text",track:2,text:hookL1||"",y:"9%",width:"95%",x_alignment:"50%",y_alignment:"50%",
       fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.2 vmin",
       font_family:"Noto Sans KR",font_weight:"900",font_size:"7 vmin"},
@@ -755,6 +767,7 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   const[imageSpecs,setImageSpecs]=useState([]); // [{seg,type,keyword/prompt}]
   const[serperAlts,setSerperAlts]=useState({}); // {idx: [url1,url2,...]}
   const[selImgIdx,setSelImgIdx]=useState(null); // 교체 패널 열린 인덱스
+  const[ttsAudioUrl,setTtsAudioUrl]=useState(null); // 채널C TTS 프리렌더 오디오 URL
   const lastApiTime=useRef(0);
   const topicsCacheA=useRef(null);
   const topicsCacheB=useRef(null);
@@ -774,7 +787,7 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   // 슬롯 전환
   const resetSlot=(sl)=>{
     if(sl==="B"&&!today.hasBSlot&&!cfg.testMode) return;
-    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?12:sl==="C"?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:sl==="C"?0:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);setImageSpecs([]);setSerperAlts({});setSelImgIdx(null);
+    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?12:sl==="C"?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:sl==="C"?0:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);setImageSpecs([]);setSerperAlts({});setSelImgIdx(null);setTtsAudioUrl(null);
     rejectedTopicsA.current=[];rejectedTopicsB.current=[];
     const cached=sl==="A"?topicsCacheA.current:sl==="C"?null:topicsCacheB.current;
     if(cached){setTopics(cached);setStep(1)}else{setTopics(null)}
@@ -1489,7 +1502,8 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     const bgm=moodBgms[Math.floor(Math.random()*moodBgms.length)];
     let json;
     if(isC){
-      json=buildJSON_C(imgUrls,scriptData.tts||scriptData.tts1||"",scriptData.hook_line1||"",scriptData.hook_line2||"",VID_C);
+      const wChunks=(subtitles&&subtitles[0])?subtitles[0]:[];
+      json=buildJSON_C(imgUrls,scriptData.tts||scriptData.tts1||"",scriptData.hook_line1||"",scriptData.hook_line2||"",VID_C,ttsAudioUrl,wChunks);
     }else{
       const ttsArr=isA?[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4]:[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4,scriptData.tts5];
       json=isA
@@ -2032,7 +2046,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   // ═══ v11.4.1: autoRun — 풀세트 붙여넣기 (img/vid 있으면 API 0회) ═══
   const autoRun=async(topicText)=>{
     if(!configured){alert("설정에서 API 키를 먼저 입력하세요");return}
-    setPicked(topicText);setAutoError("");setScript(null);setImages(Array(isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(isA?4:isC?0:SCENE_COUNT_B).fill(null));setSent(false);setImageSpecs([]);setSerperAlts({});setSelImgIdx(null);
+    setPicked(topicText);setAutoError("");setScript(null);setImages(Array(isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(isA?4:isC?0:SCENE_COUNT_B).fill(null));setSent(false);setImageSpecs([]);setSerperAlts({});setSelImgIdx(null);setTtsAudioUrl(null);setSubtitles([]);setSubConfirmed(false);
 
     // 붙여넣기 JSON 파싱
     let inputData=null;
@@ -2186,6 +2200,61 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     }catch(e){setAutoPhase("에러");setAutoError("NB2 재생성 실패: "+e.message)}
   };
 
+  // ═══ ★ v11.10.0: 채널C TTS 프리렌더 + Whisper 자막 추출 ═══
+  // Creatomate로 오디오만 렌더링 → MP4 URL 확보 → Whisper 자막 추출 → 미리보기
+  const runTtsWhisperC=async()=>{
+    if(!script||!isC)return;
+    setAutoError("");setSubtitles([]);setSubConfirmed(false);setTtsAudioUrl(null);
+    const tts=script.tts||script.tts1||"";
+    if(!tts){showToast("TTS 텍스트 없음");return}
+    if(!cfg.creatomateKey){showToast("Creatomate API 키 필요");return}
+
+    // ── Step 1: Creatomate 오디오 프리렌더 ──
+    setAutoPhase("음성 생성 중...");
+    const prov="elevenlabs model_id=eleven_multilingual_v2 voice_id="+VID_C+" stability=0.55 similarity_boost=0.70 style=0.15 use_speaker_boost=true";
+    const preJson=JSON.stringify({output_format:"mp4",width:64,height:64,fill_color:"#000000",elements:[
+      {type:"audio",source:"[tts]"+tts+"[/tts]",provider:prov}
+    ]});
+    try{
+      const renderRes=await callProxy(cfg.proxyUrl,{action:"submitRender",creatomateKey:cfg.creatomateKey,source:preJson});
+      if(!renderRes.success) throw new Error("프리렌더 제출 실패: "+(renderRes.error||""));
+      const renderId=renderRes.renderId;
+      for(let attempt=0;attempt<40;attempt++){
+        await new Promise(ok=>setTimeout(ok,4000));
+        setAutoPhase("음성 생성 중... "+((attempt+1)*4)+"초");
+        const check=await callProxy(cfg.proxyUrl,{action:"checkRender",creatomateKey:cfg.creatomateKey,renderId:renderId},30000);
+        if(check.status==="succeeded"&&check.url){
+          setTtsAudioUrl(check.url);
+          console.log("✅ 채널C TTS 프리렌더 완료: "+check.url.substring(0,60));
+
+          // ── Step 2: Whisper 자막 추출 ──
+          setAutoPhase("자막 추출 중...");
+          const wRes=await callProxy(cfg.proxyUrl,{action:"whisperTranscribe",falApiKey:cfg.falKey,audioUrl:check.url,language:"ko"});
+          if(!wRes.success) throw new Error("Whisper 실패: "+(wRes.error||""));
+          const words=wRes.words||[];
+          // 10자 이내 청크로 묶기
+          const chunks=[];let buf="";let bufStart=0;
+          for(const w of words){
+            if(buf.length>0&&(buf+" "+w.text).length>10){
+              chunks.push({text:buf,start:bufStart,end:w.start});
+              buf=w.text;bufStart=w.start;
+            }else{
+              if(!buf)bufStart=w.start;
+              buf=buf?buf+" "+w.text:w.text;
+            }
+          }
+          if(buf)chunks.push({text:buf,start:bufStart,end:words.length>0?words[words.length-1].end:0});
+          setSubtitles([chunks]); // 채널C는 단일 트랙 → [청크배열] 1개
+          setAutoPhase("자막완료");
+          console.log("✅ 채널C Whisper 자막 "+chunks.length+"청크 추출");
+          return;
+        }
+        if(check.status==="failed") throw new Error("프리렌더 실패: "+(check.error||""));
+      }
+      throw new Error("프리렌더 타임아웃 (160초)");
+    }catch(e){setAutoPhase("에러");setAutoError("음성/자막 실패: "+e.message)}
+  };
+
   // ★ v11.5.5: 순차 제출 유지 + callProxy timeout + 폴링 에러 감지 수정
   const runVideos=async()=>{
     if(!script||!images.every(u=>u))return;setAutoError("");
@@ -2238,7 +2307,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   const runSend=async()=>{
     if(!script)return;
     // ★ v11.8.0: 채널B는 자막 확정 후에만 전송 가능
-    if(isB&&subtitles.length>0&&!subConfirmed){showToast("자막을 먼저 확정해주세요");return}
+    // ★ v11.10.0: 채널C도 자막 확정 필요
+    if((isB||isC)&&subtitles.length>0&&!subConfirmed){showToast("자막을 먼저 확정해주세요");return}
     setAutoPhase("전송");setAutoError("");setRenderUrl("");
     try{
       const result=await _sendToSheets(script,images,videoUrls);
@@ -2315,7 +2385,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
 
 
   // ── Derived state ──
-  const isRunning=autoPhase&&!["완료","에러","대본완료","이미지완료","영상완료"].includes(autoPhase);
+  const isRunning=autoPhase&&!["완료","에러","대본완료","이미지완료","영상완료","자막완료"].includes(autoPhase);
   const doneScript=!!script;
   const doneImgCount=images.filter(u=>u).length;
   const doneVidCount=videoUrls.filter(u=>u).length;
@@ -2340,9 +2410,9 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           <div className="dk-pipe">
             <div className="dk-pipe-line"/>
             <div className={"dk-pipe-step"+(doneScript?" done":autoPhase==="대본"?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">대본</div><div className="dk-pipe-sub">{doneScript?(isA?"4":isC?"1":"5")+"씬 완료":autoPhase==="대본"?"생성 중...":"대기"}</div></div></div>
-            <div className={"dk-pipe-step"+(doneImgCount===imgSlotCount?" done":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">{isA?"이미지":isC?"이미지 선택":"이미지 생성"}</div><div className="dk-pipe-sub">{doneImgCount>0?doneImgCount+"/"+imgSlotCount:"대기"}</div></div></div>
+            <div className={"dk-pipe-step"+(doneImgCount===imgSlotCount?" done":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">{isA?"이미지":isC?"이미지 수집":"이미지 생성"}</div><div className="dk-pipe-sub">{doneImgCount>0?doneImgCount+"/"+imgSlotCount:"대기"}</div></div></div>
             {isB&&<div className={"dk-pipe-step"+(doneVidCount===SCENE_COUNT_B?" done":(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">영상</div><div className="dk-pipe-sub">{doneVidCount>0?doneVidCount+"/"+SCENE_COUNT_B:"대기"}</div></div></div>}
-            {isB&&<div className={"dk-pipe-step"+(subConfirmed?" done":autoPhase==="자막 추출 중..."?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">자막</div><div className="dk-pipe-sub">{subConfirmed?"확정":"대기"}</div></div></div>}
+            {(isB||isC)&&<div className={"dk-pipe-step"+(subConfirmed?" done":(autoPhase==="자막 추출 중..."||autoPhase==="음성 생성 중..."||autoPhase==="자막완료")?" active":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">{isC?"음성+자막":"자막"}</div><div className="dk-pipe-sub">{subConfirmed?"확정":ttsAudioUrl?"자막 확인":"대기"}</div></div></div>}
             <div className={"dk-pipe-step"+(doneSend?" done":autoPhase==="전송"?" active":autoPhase==="에러"?" error":"")}><div className="dk-dot"/><div><div className="dk-pipe-name">렌더링+전송</div><div className="dk-pipe-sub">{doneSend?"완료":"대기"}</div></div></div>
           </div>
         </div>
@@ -2356,8 +2426,9 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         {autoPhase&&<div className="dk-side-sec">
           <div className="dk-side-label">ACTIONS</div>
           {autoPhase==="대본완료"&&<>{isA?<button className="dk-act go" onClick={uploadImagesA}>이미지 업로드 →</button>:isC?<button className="dk-act go" onClick={runImagesC}>이미지 수집 →</button>:<button className="dk-act go" onClick={runImages}>이미지 생성 →</button>}<button className="dk-act" onClick={()=>{if(picked)autoRun(picked)}}>대본 재생성</button></>}
-          {autoPhase==="이미지완료"&&<>{(isA||isC)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act go" onClick={runVideos}>영상 생성 →</button>}{isA?<button className="dk-act" onClick={uploadImagesA}>재업로드</button>:isC?<button className="dk-act" onClick={runImagesC}>이미지 재수집</button>:<button className="dk-act" onClick={runImages}>이미지 재생성</button>}</>}
-          {autoPhase==="영상완료"&&<>{(isA||isC||subConfirmed)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runVideos}>영상 재생성</button></>}
+          {autoPhase==="이미지완료"&&<>{isA?<button className="dk-act go" onClick={runSend}>전송 →</button>:isC?<button className="dk-act go" onClick={runTtsWhisperC}>🔊 음성+자막 →</button>:<button className="dk-act go" onClick={runVideos}>영상 생성 →</button>}{isA?<button className="dk-act" onClick={uploadImagesA}>재업로드</button>:isC?<button className="dk-act" onClick={runImagesC}>이미지 재수집</button>:<button className="dk-act" onClick={runImages}>이미지 재생성</button>}</>}
+          {autoPhase==="자막완료"&&isC&&<>{subConfirmed?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runTtsWhisperC}>음성 재생성</button></>}
+          {autoPhase==="영상완료"&&<>{(isA||subConfirmed)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runVideos}>영상 재생성</button></>}
           {autoPhase==="에러"&&<><button className="dk-act err" onClick={()=>{if(picked)autoRun(picked)}}>재시도</button><button className="dk-act" onClick={()=>setShowManual(true)}>수동</button></>}
         </div>}
       </div>
@@ -2449,6 +2520,18 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           {subtitles.map((sc,si)=><div key={si} style={{marginBottom:10}}><div style={{fontSize:12,color:"#aaa",marginBottom:4}}>씬 {si+1}</div>{sc.length===0?<div style={{fontSize:11,color:"#666"}}>자막 없음</div>:<div style={{display:"flex",flexWrap:"wrap",gap:4}}>{sc.map((ch,ci)=><div key={ci} style={{background:"#2a2a3e",borderRadius:4,padding:"4px 8px",display:"flex",alignItems:"center",gap:4}}><input value={ch.text} onChange={e=>{const n=subtitles.map((s,ii)=>ii===si?s.map((c,j)=>j===ci?{...c,text:e.target.value}:c):s);setSubtitles(n)}} style={{background:"transparent",border:"none",borderBottom:"1px solid #555",color:"#fff",fontSize:13,width:Math.max(50,ch.text.length*15)+"px",outline:"none"}}/><span style={{fontSize:9,color:"#666"}}>{ch.start.toFixed(1)}s</span></div>)}</div>}</div>)}
           <button className="btn" onClick={()=>{setSubConfirmed(true);showToast("✅ 자막 확정!")}} style={{width:"100%",marginTop:8,background:"#FFD700",color:"#000",fontWeight:700}}>✅ 자막 확정</button>
         </div>}
+        {autoPhase==="자막완료"&&isC&&subtitles.length>0&&subtitles[0].length>0&&!subConfirmed&&<div style={{margin:"0 24px 16px",background:"#1a1a2e",border:"1px solid #444",borderRadius:10,padding:14}}>
+          <div style={{fontWeight:700,marginBottom:8,color:"#FFD700",fontSize:14}}>🔤 자막 미리보기 — 클릭하여 수정</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+            {subtitles[0].map((ch,ci)=><div key={ci} style={{background:"#2a2a3e",borderRadius:4,padding:"4px 8px",display:"flex",alignItems:"center",gap:4}}>
+              <input value={ch.text} onChange={e=>{const n=[subtitles[0].map((c,j)=>j===ci?{...c,text:e.target.value}:c)];setSubtitles(n)}}
+                style={{background:"transparent",border:"none",borderBottom:"1px solid #555",color:"#fff",fontSize:13,width:Math.max(50,ch.text.length*15)+"px",outline:"none"}}/>
+              <span style={{fontSize:9,color:"#666"}}>{ch.start.toFixed(1)}s</span>
+            </div>)}
+          </div>
+          {ttsAudioUrl&&<audio src={ttsAudioUrl} controls style={{width:"100%",marginTop:8,height:32}}/>}
+          <button className="btn" onClick={()=>{setSubConfirmed(true);showToast("✅ 자막 확정!")}} style={{width:"100%",marginTop:8,background:"#FFD700",color:"#000",fontWeight:700}}>✅ 자막 확정</button>
+        </div>}
         {sent&&renderUrl&&<div style={{margin:"0 24px 16px"}}><div style={{fontSize:12,color:"#4ade80",fontWeight:700,marginBottom:6}}>🎬 렌더링 완료</div><video src={renderUrl} controls style={{width:"100%",borderRadius:10,maxHeight:360}} playsInline/></div>}
       </div>
     </div>
@@ -2491,12 +2574,12 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
       {/* ═══ AUTO-RUN PROGRESS ═══ */}
       {autoPhase&&(
         <div className="auto-progress">
-          <div className="ap-title">{autoPhase==="완료"?"✅ 완료":autoPhase==="에러"?"⚠️ 오류":["대본완료","이미지완료","영상완료"].includes(autoPhase)?"⏸ 확인 후 다음 단계":"⚡ 실행 중..."}</div>
+          <div className="ap-title">{autoPhase==="완료"?"✅ 완료":autoPhase==="에러"?"⚠️ 오류":["대본완료","이미지완료","영상완료","자막완료"].includes(autoPhase)?"⏸ 확인 후 다음 단계":"⚡ 실행 중..."}</div>
           <div className="ap-steps">
             <div className={"ap-step"+(doneScript?" done":autoPhase==="대본"?" active":"")}/>
             <div className={"ap-step"+(doneImgCount===imgSlotCount?" done":(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")?" active":"")}/>
             {isB&&<div className={"ap-step"+(doneVidCount===SCENE_COUNT_B?" done":(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")?" active":"")}/>}
-            {isB&&<div className={"ap-step"+(subConfirmed?" done":autoPhase==="자막 추출 중..."?" active":"")}/>}
+            {(isB||isC)&&<div className={"ap-step"+(subConfirmed?" done":(autoPhase==="자막 추출 중..."||autoPhase==="음성 생성 중..."||autoPhase==="자막완료")?" active":"")}/>}
             <div className={"ap-step"+(doneSend?" done":autoPhase==="전송"?" active":autoPhase==="에러"?" error":"")}/>
           </div>
           <div className={"ap-status"+(autoPhase==="에러"?" error":"")}>
@@ -2504,12 +2587,14 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             {(autoPhase==="이미지 프롬프트 생성"||autoPhase==="영상 프롬프트 생성")&&"🔧 "+autoPhase+"..."}
             {autoPhase==="대본완료"&&(isA?"✅ 대본 완료 — 📁 Storybook 이미지 업로드":isC?"✅ 대본 완료 — 이미지 수집 시작":"✅ 대본 완료 — 아래에서 확인 후 이미지 생성")}
             {(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")&&"🎨 "+autoPhase}
-            {autoPhase==="이미지완료"&&(isA?"✅ 이미지 완료 — 확인 후 전송":isC?"✅ 이미지 수집 완료 — 교체할 것 클릭 → 전송":"✅ 이미지 완료 — 확인 후 영상 생성")}
+            {autoPhase==="이미지완료"&&(isA?"✅ 이미지 완료 — 확인 후 전송":isC?"✅ 이미지 수집 완료 — 교체 후 음성 생성":"✅ 이미지 완료 — 확인 후 영상 생성")}
+            {(autoPhase==="음성 생성 중..."||autoPhase.startsWith("음성 생성"))&&"🔊 "+autoPhase}
+            {autoPhase==="자막완료"&&"✅ 자막 추출 완료 — 수정 후 확정"}
             {(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")&&"🎬 "+autoPhase}
             {autoPhase==="자막 추출 중..."&&"🔤 자막 추출 중..."}
             {autoPhase==="영상완료"&&(subConfirmed||(isA||isC)?"✅ 영상 완료 — 확인 후 전송":"✅ 영상 완료 — 자막 확인 후 전송")}
             {autoPhase==="전송"&&"📤 Sheets 전송 중..."}
-            {autoPhase==="완료"&&(isA?"대본→이미지→전송 완료!":isC?"대본→이미지→전송 완료!":"대본→이미지→영상→전송 완료!")}
+            {autoPhase==="완료"&&(isA?"대본→이미지→전송 완료!":isC?"대본→이미지→음성→전송 완료!":"대본→이미지→영상→전송 완료!")}
             {autoPhase==="에러"&&autoError}
           </div>
           {/* 단계별 확인 버튼 */}
@@ -2526,11 +2611,40 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
               {isA?<button className="btn btn-dark" onClick={uploadImagesA} style={{flex:1}}>📁 이미지 재업로드</button>
                    :isC?<button className="btn btn-dark" onClick={runImagesC} style={{flex:1}}>🔄 이미지 재수집</button>
                    :<button className="btn btn-dark" onClick={runImages} style={{flex:1}}>🔄 이미지 재생성</button>}
-              {(isA||isC)?(
+              {isA?(
                 <button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
+              ):isC?(
+                <button className="btn btn-purple" onClick={runTtsWhisperC} style={{flex:1}}>🔊 음성+자막 →</button>
               ):(
                 <button className="btn btn-purple" onClick={runVideos} style={{flex:1}}>🎬 영상 생성 →</button>
               )}
+            </div>
+          )}
+          {autoPhase==="자막완료"&&isC&&(
+            <div style={{marginTop:8}}>
+              {subtitles.length>0&&subtitles[0].length>0&&!subConfirmed&&(
+                <div style={{background:"#1a1a2e",border:"1px solid #444",borderRadius:8,padding:12,marginBottom:8}}>
+                  <div style={{fontWeight:700,marginBottom:8,color:"#FFD700",fontSize:14}}>🔤 자막 미리보기 — 클릭하여 수정</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                    {subtitles[0].map((ch,ci)=>(
+                      <div key={ci} style={{background:"#2a2a3e",borderRadius:4,padding:"4px 8px",display:"flex",alignItems:"center",gap:4}}>
+                        <input value={ch.text} onChange={e=>{const n=[subtitles[0].map((c,j)=>j===ci?{...c,text:e.target.value}:c)];setSubtitles(n)}}
+                          style={{background:"transparent",border:"none",borderBottom:"1px solid #555",color:"#fff",fontSize:13,width:Math.max(50,ch.text.length*15)+"px",outline:"none",padding:"2px 0"}}/>
+                        <span style={{fontSize:9,color:"#666",whiteSpace:"nowrap"}}>{ch.start.toFixed(1)}s</span>
+                      </div>
+                    ))}
+                  </div>
+                  {ttsAudioUrl&&<audio src={ttsAudioUrl} controls style={{width:"100%",marginTop:8,height:36}}/>}
+                  <button className="btn" onClick={()=>{setSubConfirmed(true);showToast("✅ 자막 확정!")}}
+                    style={{width:"100%",marginTop:8,background:"#FFD700",color:"#000",fontWeight:700}}>✅ 자막 확정</button>
+                </div>
+              )}
+              <div style={{display:"flex",gap:6}}>
+                <button className="btn btn-dark" onClick={runTtsWhisperC} style={{flex:1}}>🔄 음성 재생성</button>
+                {subConfirmed?
+                  <button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
+                  :<button className="btn btn-dark" disabled style={{flex:1,opacity:0.4}}>자막 확정 필요</button>}
+              </div>
             </div>
           )}
           {autoPhase==="영상완료"&&(
