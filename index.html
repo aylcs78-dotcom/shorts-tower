@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.10.0</title>
+<title>Shorts 관제탑 v11.10.1</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -711,7 +711,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.10.0</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.10.1</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"B+C":"C only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -2145,8 +2145,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
       setAutoPhase("이미지 "+(i+1)+"/"+count+" "+(spec.type==="serper"?"검색":"생성")+"...");
       try{
         if(spec.type==="serper"){
-          // ★ v11.10.0: tbs 필터 (세로+대형+사진) + Backend 내 자동 폴백
-          const r=await callProxy(cfg.proxyUrl,{action:"searchImages",keyword:spec.keyword,num:8,tbs:"iar:t,isz:l,itp:photos"});
+          // ★ v11.10.0: tbs 필터 (대형+사진) + 세로 코드 정렬 + Backend 워터마크 필터
+          const r=await callProxy(cfg.proxyUrl,{action:"searchImages",keyword:spec.keyword,num:10,tbs:"isz:l,itp:photos"});
           if(r.success&&r.images&&r.images.length>0){
             // 세로 이미지 우선 정렬
             const sorted=[...r.images].sort((a,b)=>{
@@ -2183,7 +2183,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     if(!newKeyword||isRunning)return;
     setAutoPhase("IMG"+(idx+1)+" 재검색...");setAutoError("");
     try{
-      const r=await callProxy(cfg.proxyUrl,{action:"searchImages",keyword:newKeyword,num:8,tbs:"iar:t,isz:l,itp:photos"});
+      const r=await callProxy(cfg.proxyUrl,{action:"searchImages",keyword:newKeyword,num:10,tbs:"isz:l,itp:photos"});
       if(r.success&&r.images&&r.images.length>0){
         const newImgs=[...images];newImgs[idx]=r.images[0].url;setImages(newImgs);
         const newAlts={...serperAlts};newAlts[idx]=r.images.slice(1,6).map(img=>img.url);setSerperAlts(newAlts);
