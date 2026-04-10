@@ -106,6 +106,7 @@ textarea,input{font-family:inherit}
 .c-img-cell{position:relative;aspect-ratio:9/16;border-radius:6px;overflow:hidden;border:1px solid #222;cursor:pointer;background:#111}
 .c-img-cell img{width:100%;height:100%;object-fit:cover}
 .c-img-cell.selected{border:2px solid #fbbf24}
+.c-img-cell.invalid{border:2px solid #ef4444;box-shadow:0 0 8px rgba(239,68,68,0.5)}
 .c-img-badge{position:absolute;top:2px;left:2px;font-size:8px;padding:1px 5px;border-radius:3px;color:#fff;font-weight:700}
 .c-img-badge.serper{background:#2563eb}
 .c-img-badge.nb2{background:#7c3aed}
@@ -773,6 +774,7 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   const[imageSpecs,setImageSpecs]=useState([]); // [{seg,type,keyword/prompt}]
   const[serperAlts,setSerperAlts]=useState({}); // {idx: [url1,url2,...]}
   const[selImgIdx,setSelImgIdx]=useState(null); // 교체 패널 열린 인덱스
+  const[invalidImgs,setInvalidImgs]=useState([]); // ★ v11.10.5: URL 접근 불가 이미지 인덱스
   const[ttsAudioUrl,setTtsAudioUrl]=useState(null); // 채널C TTS 프리렌더 오디오 URL
   const lastApiTime=useRef(0);
   const topicsCacheA=useRef(null);
@@ -793,7 +795,7 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   // 슬롯 전환
   const resetSlot=(sl)=>{
     if(sl==="B"&&!today.hasBSlot&&!cfg.testMode) return;
-    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?12:sl==="C"?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:sl==="C"?0:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);setImageSpecs([]);setSerperAlts({});setSelImgIdx(null);setTtsAudioUrl(null);
+    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?12:sl==="C"?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:sl==="C"?0:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);setImageSpecs([]);setSerperAlts({});setSelImgIdx(null);setInvalidImgs([]);setTtsAudioUrl(null);
     rejectedTopicsA.current=[];rejectedTopicsB.current=[];
     const cached=sl==="A"?topicsCacheA.current:sl==="C"?null:topicsCacheB.current;
     if(cached){setTopics(cached);setStep(1)}else{setTopics(null)}
@@ -2052,7 +2054,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   // ═══ v11.4.1: autoRun — 풀세트 붙여넣기 (img/vid 있으면 API 0회) ═══
   const autoRun=async(topicText)=>{
     if(!configured){alert("설정에서 API 키를 먼저 입력하세요");return}
-    setPicked(topicText);setAutoError("");setScript(null);setImages(Array(isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(isA?4:isC?0:SCENE_COUNT_B).fill(null));setSent(false);setImageSpecs([]);setSerperAlts({});setSelImgIdx(null);setTtsAudioUrl(null);setSubtitles([]);setSubConfirmed(false);
+    setPicked(topicText);setAutoError("");setScript(null);setImages(Array(isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(isA?4:isC?0:SCENE_COUNT_B).fill(null));setSent(false);setImageSpecs([]);setSerperAlts({});setSelImgIdx(null);setInvalidImgs([]);setTtsAudioUrl(null);setSubtitles([]);setSubConfirmed(false);
 
     // 붙여넣기 JSON 파싱
     let inputData=null;
@@ -2176,6 +2178,20 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
       }
     }
     if(failures.length>0){setAutoPhase("에러");setAutoError("이미지 "+failures.join(",")+" 실패 — 클릭하여 개별 재시도");return}
+    // ★ v11.10.5: 이미지 URL 접근 검증 (Creatomate 렌더 실패 방지)
+    setAutoPhase("이미지 검증 중...");
+    try{
+      const validUrls=imgUrls.filter(u=>u);
+      const vRes=await callProxy(cfg.proxyUrl,{action:"validateImages",urls:validUrls},30000);
+      if(vRes.success&&!vRes.all_ok){
+        const badIdxs=vRes.failed.map(f=>f.index);
+        setInvalidImgs(badIdxs);
+        setAutoPhase("이미지완료");
+        showToast("⚠️ "+badIdxs.length+"장 접근 불가 — 교체 필요");
+        return;
+      }
+      setInvalidImgs([]);
+    }catch(e){console.log("이미지 검증 실패 (무시): "+e.message)}
     setStep(3);setAutoPhase("이미지완료");
   };
 
@@ -2183,6 +2199,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   const replaceImageC=async(idx,altUrl)=>{
     if(altUrl){
       const newImgs=[...images];newImgs[idx]=altUrl;setImages(newImgs);
+      setInvalidImgs(prev=>prev.filter(i=>i!==idx));
       showToast("✅ IMG"+(idx+1)+" 교체 완료");setSelImgIdx(null);return;
     }
   };
@@ -2195,6 +2212,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         const newImgs=[...images];newImgs[idx]=r.images[0].url;setImages(newImgs);
         const newAlts={...serperAlts};newAlts[idx]=r.images.slice(1,6).map(img=>img.url);setSerperAlts(newAlts);
         const newSpecs=[...imageSpecs];newSpecs[idx]={...newSpecs[idx],keyword:newKeyword};setImageSpecs(newSpecs);
+        setInvalidImgs(prev=>prev.filter(i=>i!==idx));
         showToast("✅ IMG"+(idx+1)+" 재검색 완료");
       }else{showToast("❌ 검색 결과 없음")}
       setAutoPhase(images.filter(u=>u).length>=imgSlotCount?"이미지완료":"대본완료");
@@ -2209,6 +2227,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     try{
       const url=await _generateImageNB2(prompt,"9:16");
       const newImgs=[...images];newImgs[idx]=url;setImages(newImgs);
+      setInvalidImgs(prev=>prev.filter(i=>i!==idx));
       showToast("✅ IMG"+(idx+1)+" NB2 재생성 완료");
       setAutoPhase(newImgs.filter(u=>u).length>=imgSlotCount?"이미지완료":"대본완료");
     }catch(e){setAutoPhase("에러");setAutoError("NB2 재생성 실패: "+e.message)}
@@ -2218,6 +2237,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   // Creatomate로 오디오만 렌더링 → MP4 URL 확보 → Whisper 자막 추출 → 미리보기
   const runTtsWhisperC=async()=>{
     if(!script||!isC)return;
+    if(invalidImgs.length>0){showToast("⚠️ 접근 불가 이미지 "+invalidImgs.length+"장 교체 필요");return}
     setAutoError("");setSubtitles([]);setSubConfirmed(false);setTtsAudioUrl(null);
     const tts=script.tts||script.tts1||"";
     if(!tts){showToast("TTS 텍스트 없음");return}
@@ -2446,7 +2466,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         {autoPhase&&<div className="dk-side-sec">
           <div className="dk-side-label">ACTIONS</div>
           {autoPhase==="대본완료"&&<>{isA?<button className="dk-act go" onClick={uploadImagesA}>이미지 업로드 →</button>:isC?<button className="dk-act go" onClick={runImagesC}>이미지 수집 →</button>:<button className="dk-act go" onClick={runImages}>이미지 생성 →</button>}<button className="dk-act" onClick={()=>{if(picked)autoRun(picked)}}>대본 재생성</button></>}
-          {autoPhase==="이미지완료"&&<>{isA?<button className="dk-act go" onClick={runSend}>전송 →</button>:isC?<button className="dk-act go" onClick={runTtsWhisperC}>🔊 음성+자막 →</button>:<button className="dk-act go" onClick={runVideos}>영상 생성 →</button>}{isA?<button className="dk-act" onClick={uploadImagesA}>재업로드</button>:isC?<button className="dk-act" onClick={runImagesC}>이미지 재수집</button>:<button className="dk-act" onClick={runImages}>이미지 재생성</button>}</>}
+          {autoPhase==="이미지완료"&&<>{isA?<button className="dk-act go" onClick={runSend}>전송 →</button>:isC?(invalidImgs.length>0?<button className="dk-act" disabled style={{opacity:0.4}}>⚠️ {invalidImgs.length}장 교체 필요</button>:<button className="dk-act go" onClick={runTtsWhisperC}>🔊 음성+자막 →</button>):<button className="dk-act go" onClick={runVideos}>영상 생성 →</button>}{isA?<button className="dk-act" onClick={uploadImagesA}>재업로드</button>:isC?<button className="dk-act" onClick={runImagesC}>이미지 재수집</button>:<button className="dk-act" onClick={runImages}>이미지 재생성</button>}</>}
           {autoPhase==="자막완료"&&isC&&<>{subConfirmed?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runTtsWhisperC}>음성 재생성</button></>}
           {autoPhase==="영상완료"&&<>{(isA||subConfirmed)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runVideos}>영상 재생성</button></>}
           {autoPhase==="에러"&&<>{isC?(
@@ -2484,9 +2504,10 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             <div className="c-img-grid">
               {Array.from({length:imageSpecs.length||imgSlotCount},(_,i)=>{const has=!!images[i];const spec=imageSpecs[i]||{};return(
                 <div key={i}>
-                  <div className={"c-img-cell"+(selImgIdx===i?" selected":"")} onClick={()=>regenSingleImage(i)}>
+                  <div className={"c-img-cell"+(selImgIdx===i?" selected":"")+(invalidImgs.includes(i)?" invalid":"")} onClick={()=>regenSingleImage(i)}>
                     {has?<img src={images[i]} alt=""/>:<div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:"#444",fontSize:11}}>{i+1}</div>}
                     <div className={"c-img-badge "+(spec.type==="nb2"?"nb2":"serper")}>{spec.type==="nb2"?"AI":"S"}</div>
+                    {invalidImgs.includes(i)&&<div style={{position:"absolute",top:2,left:2,background:"#ef4444",color:"#fff",fontSize:9,padding:"1px 4px",borderRadius:3,fontWeight:700}}>⚠️</div>}
                     <div className="c-img-num">{i+1}</div>
                   </div>
                   {spec.seg&&<div className="c-img-seg" title={spec.seg}>{spec.seg}</div>}
@@ -2612,7 +2633,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             {(autoPhase==="이미지 프롬프트 생성"||autoPhase==="영상 프롬프트 생성")&&"🔧 "+autoPhase+"..."}
             {autoPhase==="대본완료"&&(isA?"✅ 대본 완료 — 📁 Storybook 이미지 업로드":isC?"✅ 대본 완료 — 이미지 수집 시작":"✅ 대본 완료 — 아래에서 확인 후 이미지 생성")}
             {(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")&&"🎨 "+autoPhase}
-            {autoPhase==="이미지완료"&&(isA?"✅ 이미지 완료 — 확인 후 전송":isC?"✅ 이미지 수집 완료 — 교체 후 음성 생성":"✅ 이미지 완료 — 확인 후 영상 생성")}
+            {autoPhase==="이미지완료"&&(isA?"✅ 이미지 완료 — 확인 후 전송":isC?(invalidImgs.length>0?"⚠️ "+invalidImgs.length+"장 접근 불가 — 빨간 테두리 이미지 교체":"✅ 이미지 수집 완료 — 교체 후 음성 생성"):"✅ 이미지 완료 — 확인 후 영상 생성")}
             {(autoPhase==="음성 생성 중..."||autoPhase.startsWith("음성 생성"))&&"🔊 "+autoPhase}
             {autoPhase==="자막완료"&&"✅ 자막 추출 완료 — 수정 후 확정"}
             {(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")&&"🎬 "+autoPhase}
@@ -2639,7 +2660,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
               {isA?(
                 <button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
               ):isC?(
-                <button className="btn btn-purple" onClick={runTtsWhisperC} style={{flex:1}}>🔊 음성+자막 →</button>
+                invalidImgs.length>0?<button className="btn btn-dark" disabled style={{flex:1,opacity:0.4}}>⚠️ {invalidImgs.length}장 교체 필요</button>
+                :<button className="btn btn-purple" onClick={runTtsWhisperC} style={{flex:1}}>🔊 음성+자막 →</button>
               ):(
                 <button className="btn btn-purple" onClick={runVideos} style={{flex:1}}>🎬 영상 생성 →</button>
               )}
@@ -2762,9 +2784,10 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
                 <div className="c-img-grid">
                   {Array.from({length:imageSpecs.length||imgSlotCount},(_,i)=>{const has=!!images[i];const spec=imageSpecs[i]||{};return(
                     <div key={i}>
-                      <div className={"c-img-cell"+(selImgIdx===i?" selected":"")} onClick={()=>regenSingleImage(i)}>
+                      <div className={"c-img-cell"+(selImgIdx===i?" selected":"")+(invalidImgs.includes(i)?" invalid":"")} onClick={()=>regenSingleImage(i)}>
                         {has?<img src={images[i]} alt=""/>:<div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:"#444",fontSize:11}}>{i+1}</div>}
                         <div className={"c-img-badge "+(spec.type==="nb2"?"nb2":"serper")}>{spec.type==="nb2"?"AI":"S"}</div>
+                        {invalidImgs.includes(i)&&<div style={{position:"absolute",top:2,left:2,background:"#ef4444",color:"#fff",fontSize:9,padding:"1px 4px",borderRadius:3,fontWeight:700}}>⚠️</div>}
                         <div className="c-img-num">{i+1}</div>
                       </div>
                     </div>
