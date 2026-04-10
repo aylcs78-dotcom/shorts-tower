@@ -670,7 +670,7 @@ function App(){
   const[tab,setTab]=useState("work");
   const[today]=useState(getToday());
   const[cfg,setCfg]=useState(()=>{
-    const defaults={proxyUrl:DEFAULT_PROXY_URL,falKey:"",claudeKey:"",sheetId:DEFAULT_SHEET_ID,voiceIdA:VID_A,youtubeApiKey:"",imgbbKey:"",creatomateKey:"",formatRefA:"",formatRefB:"",formatRefDate:"",testMode:false};
+    const defaults={proxyUrl:DEFAULT_PROXY_URL,falKey:"",claudeKey:"",sheetId:DEFAULT_SHEET_ID,voiceIdA:VID_A,youtubeApiKey:"",imgbbKey:"",creatomateKey:"",elevenLabsKey:"",formatRefA:"",formatRefB:"",formatRefDate:"",testMode:false};
     const saved=ls("config")||defaults;
     if(!saved.proxyUrl) saved.proxyUrl=DEFAULT_PROXY_URL;
     if(!saved.sheetId) saved.sheetId=DEFAULT_SHEET_ID;
@@ -705,7 +705,7 @@ function App(){
   const saveCfg=useCallback((c)=>{
     setCfg(c);ls("config",c);
     if(c.proxyUrl&&c.sheetId){
-      const syncData={falKey:c.falKey||"",claudeKey:c.claudeKey||"",voiceIdA:c.voiceIdA||"",youtubeApiKey:c.youtubeApiKey||"",imgbbKey:c.imgbbKey||"",creatomateKey:c.creatomateKey||"",formatRefA:c.formatRefA||"",formatRefB:c.formatRefB||"",formatRefDate:c.formatRefDate||""};
+      const syncData={falKey:c.falKey||"",claudeKey:c.claudeKey||"",voiceIdA:c.voiceIdA||"",youtubeApiKey:c.youtubeApiKey||"",imgbbKey:c.imgbbKey||"",creatomateKey:c.creatomateKey||"",elevenLabsKey:c.elevenLabsKey||"",formatRefA:c.formatRefA||"",formatRefB:c.formatRefB||"",formatRefDate:c.formatRefDate||""};
       callProxy(c.proxyUrl,{action:"saveConfig",sheetId:c.sheetId,config:syncData}).then(r=>{if(r.success)setSyncStatus("synced")}).catch(()=>{});
     }
   },[]);
@@ -2233,77 +2233,60 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     }catch(e){setAutoPhase("에러");setAutoError("NB2 재생성 실패: "+e.message)}
   };
 
-  // ═══ ★ v11.10.0: 채널C TTS 프리렌더 + Whisper 자막 추출 ═══
-  // Creatomate로 오디오만 렌더링 → MP4 URL 확보 → Whisper 자막 추출 → 미리보기
+  // ═══ ★ v11.10.5: 채널C TTS — ElevenLabs 직접 호출 + Whisper 자막 추출 ═══
+  // ★ v11.10.5: ElevenLabs 직접 호출 → Google Drive URL → Whisper 자막 추출
   const runTtsWhisperC=async()=>{
     if(!script||!isC)return;
     if(invalidImgs.length>0){showToast("⚠️ 접근 불가 이미지 "+invalidImgs.length+"장 교체 필요");return}
     setAutoError("");setSubtitles([]);setSubConfirmed(false);setTtsAudioUrl(null);
     const tts=script.tts||script.tts1||"";
     if(!tts){showToast("TTS 텍스트 없음");return}
-    if(!cfg.creatomateKey){showToast("Creatomate API 키 필요");return}
-    // ★ v11.10.4: unitToKorean 발음 교정 적용 (채널A와 동일)
+    if(!cfg.elevenLabsKey){showToast("ElevenLabs API 키 필요 — 설정에서 입력");return}
     const ttsSpeech=unitToKorean(tts);
 
-    // ── Step 1: Creatomate 오디오 프리렌더 ──
-    setAutoPhase("음성 생성 중...");
-    const prov="elevenlabs model_id=eleven_multilingual_v2 voice_id="+VID_C+" stability=0.55 similarity_boost=0.70 style=0.15 use_speaker_boost=true";
-    const preJson=JSON.stringify({output_format:"mp4",width:64,height:64,fill_color:"#000000",elements:[
-      {type:"audio",source:"[tts]"+ttsSpeech+"[/tts]",provider:prov}
-    ]});
     try{
-      const renderRes=await callProxy(cfg.proxyUrl,{action:"submitRender",creatomateKey:cfg.creatomateKey,source:preJson});
-      if(!renderRes.success) throw new Error("프리렌더 제출 실패: "+(renderRes.error||""));
-      const renderId=renderRes.renderId;
-      for(let attempt=0;attempt<40;attempt++){
-        await new Promise(ok=>setTimeout(ok,4000));
-        setAutoPhase("음성 생성 중... "+((attempt+1)*4)+"초");
-        const check=await callProxy(cfg.proxyUrl,{action:"checkRender",creatomateKey:cfg.creatomateKey,renderId:renderId},30000);
-        if(check.status==="succeeded"&&check.url){
-          setTtsAudioUrl(check.url);
-          console.log("✅ 채널C TTS 프리렌더 완료: "+check.url.substring(0,60));
+      // ── Step 1: ElevenLabs 직접 TTS 생성 ──
+      setAutoPhase("음성 생성 중...");
+      const ttsRes=await callProxy(cfg.proxyUrl,{action:"generateTTS",text:ttsSpeech,voiceId:VID_C,elevenLabsKey:cfg.elevenLabsKey,stability:0.55,similarityBoost:0.70,style:0.15},60000);
+      if(!ttsRes.success) throw new Error("TTS 생성 실패: "+(ttsRes.error||""));
+      setTtsAudioUrl(ttsRes.audioUrl);
+      console.log("✅ 채널C ElevenLabs TTS 완료: "+ttsRes.audioUrl.substring(0,60));
 
-          // ── Step 2: Whisper 자막 추출 (120초 타임아웃) ──
-          setAutoPhase("자막 추출 중...");
-          // ★ v11.10.5: TTS 원문을 prompt로 전달 → 환각 대폭 감소
-          const wRes=await callProxy(cfg.proxyUrl,{action:"whisperTranscribe",falApiKey:cfg.falKey,audioUrl:check.url,language:"ko",prompt:tts},120000);
-          if(!wRes.success) throw new Error("Whisper 실패: "+(wRes.error||""));
-          // ★ v11.10.5: 환각 필터 3단계 — ①TTS/태그 제거 ②TTS 원문 대조 트리밍
-          let words=(wRes.words||[]).filter(w=>{
-            const t=(w.text||"").trim();
-            return t && t.toLowerCase()!=="tts" && !t.match(/^\[.*\]$/);
-          });
-          if(words.length>0&&tts.length>0){
-            const firstChar=tts.charAt(0);
-            const startIdx=words.findIndex(w=>w.text.includes(firstChar));
-            if(startIdx>0) words=words.slice(startIdx);
-            const lastChars=tts.slice(-3).replace(/[.\s]/g,"");
-            let endIdx=words.length-1;
-            for(let i=words.length-1;i>=Math.max(0,words.length-5);i--){
-              if(lastChars.split("").some(c=>words[i].text.includes(c))){endIdx=i;break}
-            }
-            if(endIdx<words.length-1) words=words.slice(0,endIdx+1);
-          }
-          // 10자 이내 청크로 묶기
-          const chunks=[];let buf="";let bufStart=0;
-          for(const w of words){
-            if(buf.length>0&&(buf+" "+w.text).length>10){
-              chunks.push({text:buf,start:bufStart,end:w.start});
-              buf=w.text;bufStart=w.start;
-            }else{
-              if(!buf)bufStart=w.start;
-              buf=buf?buf+" "+w.text:w.text;
-            }
-          }
-          if(buf)chunks.push({text:buf,start:bufStart,end:words.length>0?words[words.length-1].end:0});
-          setSubtitles([chunks]); // 채널C는 단일 트랙 → [청크배열] 1개
-          setAutoPhase("자막완료");
-          console.log("✅ 채널C Whisper 자막 "+chunks.length+"청크 추출");
-          return;
+      // ── Step 2: Whisper 자막 추출 ──
+      setAutoPhase("자막 추출 중...");
+      const wRes=await callProxy(cfg.proxyUrl,{action:"whisperTranscribe",falApiKey:cfg.falKey,audioUrl:ttsRes.audioUrl,language:"ko",prompt:tts},120000);
+      if(!wRes.success) throw new Error("Whisper 실패: "+(wRes.error||""));
+      // 환각 필터 (안전장치 유지)
+      let words=(wRes.words||[]).filter(w=>{
+        const t=(w.text||"").trim();
+        return t && t.toLowerCase()!=="tts" && !t.match(/^\[.*\]$/);
+      });
+      if(words.length>0&&tts.length>0){
+        const firstChar=tts.charAt(0);
+        const startIdx=words.findIndex(w=>w.text.includes(firstChar));
+        if(startIdx>0) words=words.slice(startIdx);
+        const lastChars=tts.slice(-3).replace(/[.\s]/g,"");
+        let endIdx=words.length-1;
+        for(let i=words.length-1;i>=Math.max(0,words.length-5);i--){
+          if(lastChars.split("").some(c=>words[i].text.includes(c))){endIdx=i;break}
         }
-        if(check.status==="failed") throw new Error("프리렌더 실패: "+(check.error||""));
+        if(endIdx<words.length-1) words=words.slice(0,endIdx+1);
       }
-      throw new Error("프리렌더 타임아웃 (160초)");
+      // 10자 이내 청크로 묶기
+      const chunks=[];let buf="";let bufStart=0;
+      for(const w of words){
+        if(buf.length>0&&(buf+" "+w.text).length>10){
+          chunks.push({text:buf,start:bufStart,end:w.start});
+          buf=w.text;bufStart=w.start;
+        }else{
+          if(!buf)bufStart=w.start;
+          buf=buf?buf+" "+w.text:w.text;
+        }
+      }
+      if(buf)chunks.push({text:buf,start:bufStart,end:words.length>0?words[words.length-1].end:0});
+      setSubtitles([chunks]);
+      setAutoPhase("자막완료");
+      console.log("✅ 채널C Whisper 자막 "+chunks.length+"청크 추출");
     }catch(e){setAutoPhase("에러");setAutoError("음성/자막 실패: "+e.message)}
   };
 
@@ -2895,6 +2878,8 @@ function SettingsView({cfg,saveCfg,configured,syncStatus}){
         <input className="field-input" value={local.imgbbKey||""} onChange={e=>setLocal(p=>({...p,imgbbKey:e.target.value}))} placeholder="imgbb.com 무료 가입 → API Key" type="password"/>
         <label className="field-label">Creatomate API Key <span style={{color:"#555",fontWeight:400}}>(렌더링 미리보기)</span></label>
         <input className="field-input" value={local.creatomateKey||""} onChange={e=>setLocal(p=>({...p,creatomateKey:e.target.value}))} placeholder="Creatomate Dashboard → API Key" type="password"/>
+        <label className="field-label" style={{marginTop:8}}>ElevenLabs API Key <span style={{color:"#555",fontWeight:400}}>(채널C TTS)</span></label>
+        <input className="field-input" value={local.elevenLabsKey||""} onChange={e=>setLocal(p=>({...p,elevenLabsKey:e.target.value}))} placeholder="elevenlabs.io → Profile → API Key" type="password"/>
         <div style={{display:"flex",gap:8,marginTop:16}}>
           <button className="btn btn-red" onClick={save} style={{flex:1}}>💾 저장</button>
           <button className="btn btn-blue" onClick={test} disabled={testing} style={{flex:1}}>{testing?"테스트...":"🔗 연결 테스트"}</button>
