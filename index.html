@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.9.6</title>
+<title>Shorts 관제탑 v11.10.0</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -100,6 +100,24 @@ textarea,input{font-family:inherit}
 .vid-badge.pending{background:#eab30833;color:#eab308}
 .vid-badge.done{background:#4ade8033;color:#4ade80}
 .vid-badge.error{background:#ff444433;color:#ff4444}
+/* Desktop */
+/* ═══ v11.10.0: 채널C 이미지 리뷰 ═══ */
+.c-img-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.c-img-cell{position:relative;aspect-ratio:9/16;border-radius:6px;overflow:hidden;border:1px solid #222;cursor:pointer;background:#111}
+.c-img-cell img{width:100%;height:100%;object-fit:cover}
+.c-img-cell.selected{border:2px solid #fbbf24}
+.c-img-badge{position:absolute;top:2px;left:2px;font-size:8px;padding:1px 5px;border-radius:3px;color:#fff;font-weight:700}
+.c-img-badge.serper{background:#2563eb}
+.c-img-badge.nb2{background:#7c3aed}
+.c-img-num{position:absolute;bottom:2px;right:4px;font-size:9px;color:#fff;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.c-img-seg{font-size:10px;color:#888;margin-top:2px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c-replace-panel{background:#0a0a10;border:1px solid #1a1a28;border-radius:8px;padding:10px;margin-top:8px}
+.c-replace-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0}
+.c-replace-cell{aspect-ratio:9/16;border-radius:4px;overflow:hidden;border:1px solid #222;cursor:pointer;background:#111}
+.c-replace-cell img{width:100%;height:100%;object-fit:cover}
+.c-replace-cell.picked{border:2px solid #4ade80}
+.c-legend{display:flex;gap:10px;font-size:10px;color:#666;margin-top:6px}
+.c-legend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px;vertical-align:middle}
 /* Desktop */
 @media(min-width:1024px){
 body{max-width:none;padding-bottom:0;background:#06060a}
@@ -681,7 +699,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.9.6</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.10.0</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"B+C":"C only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -733,6 +751,10 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   // ★ v11.8.0: 채널B 자막 미리보기/수정
   const[subtitles,setSubtitles]=useState([]); // [[씬1청크], [씬2청크], ...]
   const[subConfirmed,setSubConfirmed]=useState(false);
+  // ★ v11.10.0: 채널C 이미지 리뷰 시스템
+  const[imageSpecs,setImageSpecs]=useState([]); // [{seg,type,keyword/prompt}]
+  const[serperAlts,setSerperAlts]=useState({}); // {idx: [url1,url2,...]}
+  const[selImgIdx,setSelImgIdx]=useState(null); // 교체 패널 열린 인덱스
   const lastApiTime=useRef(0);
   const topicsCacheA=useRef(null);
   const topicsCacheB=useRef(null);
@@ -747,12 +769,12 @@ function WorkflowView({today,cfg,saveCfg,showToast,configured,isDesktop}){
   const tmpl=isA?ROT_A[today.dow]:isC?"잡학":"나열형";
   const{t,s}=parseTmpl(tmpl);
   const scheduleTime=isA?(today.isWeekday?SCHEDULE_A.weekday:SCHEDULE_A.weekend):isC?SCHEDULE_C:(SCHEDULE_B[today.dow]||"—");
-  const imgSlotCount=isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B;
+  const imgSlotCount=isA?12:isC?(imageSpecs.length||IMG_COUNT_C):SCENE_COUNT_B;
 
   // 슬롯 전환
   const resetSlot=(sl)=>{
     if(sl==="B"&&!today.hasBSlot&&!cfg.testMode) return;
-    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?12:sl==="C"?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:sl==="C"?0:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);
+    setSlot(sl);setStep(0);setPicked("");setScript(null);setImages(Array(sl==="A"?12:sl==="C"?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(sl==="A"?4:sl==="C"?0:SCENE_COUNT_B).fill(null));setSent(false);setAutoPhase("");setAutoError("");setShowManual(false);setRenderUrl("");setTopicsRaw("");setTopicCandidatesB(null);setSubtitles([]);setSubConfirmed(false);setImageSpecs([]);setSerperAlts({});setSelImgIdx(null);
     rejectedTopicsA.current=[];rejectedTopicsB.current=[];
     const cached=sl==="A"?topicsCacheA.current:sl==="C"?null:topicsCacheB.current;
     if(cached){setTopics(cached);setStep(1)}else{setTopics(null)}
@@ -2010,7 +2032,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   // ═══ v11.4.1: autoRun — 풀세트 붙여넣기 (img/vid 있으면 API 0회) ═══
   const autoRun=async(topicText)=>{
     if(!configured){alert("설정에서 API 키를 먼저 입력하세요");return}
-    setPicked(topicText);setAutoError("");setScript(null);setImages(Array(isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(isA?4:isC?0:SCENE_COUNT_B).fill(null));setSent(false);
+    setPicked(topicText);setAutoError("");setScript(null);setImages(Array(isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B).fill(null));setVideoUrls(Array(isA?4:isC?0:SCENE_COUNT_B).fill(null));setSent(false);setImageSpecs([]);setSerperAlts({});setSelImgIdx(null);
 
     // 붙여넣기 JSON 파싱
     let inputData=null;
@@ -2022,7 +2044,12 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         let data={...inputData};
         // ★ v11.9.6: 채널C는 tts 단일 필드 → tts1로 통합
         if(isC&&data.tts&&!data.tts1){data.tts1=data.tts}
-        const hasImg=!!(data.img1&&data.img1.length>10);
+        // ★ v11.10.0: 채널C images 배열 파싱 → imageSpecs에 저장
+        if(isC&&Array.isArray(data.images)&&data.images.length>0){
+          setImageSpecs(data.images);
+          console.log("📸 채널C 이미지 스펙 "+data.images.length+"장 파싱 (serper:"+data.images.filter(s=>s.type==="serper").length+" / nb2:"+data.images.filter(s=>s.type==="nb2").length+")");
+        }
+        const hasImg=isC?false:!!(data.img1&&data.img1.length>10);
         const hasVid=isB&&!!(data.vid1&&data.vid1.length>10);
         const sceneCount=isA?4:isC?1:SCENE_COUNT_B;
         const imgCount=isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B;
@@ -2067,7 +2094,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   // ★ v11.7.2: 이미지 생성 — 순차 + 기존 성공분 스킵 (GAS 동시요청 병목 해결)
   const runImages=async()=>{
     if(!script)return;
-    if(isA||isC){showToast(isA?"채널A는 📁 이미지 업로드를 사용하세요":"채널C는 풀세트에 이미지 URL 포함");return}
+    if(isA){showToast("채널A는 📁 이미지 업로드를 사용하세요");return}
+    if(isC){return runImagesC()}
     setAutoError("");
     const count=SCENE_COUNT_B;
     const ar="9:16";
@@ -2087,6 +2115,75 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     }
     if(failures.length>0){setAutoPhase("에러");setAutoError("이미지 "+failures.join(",")+" 실패 — 🔄로 개별 재생성");return}
     setStep(3);setAutoPhase("이미지완료");
+  };
+
+  // ═══ ★ v11.10.0: 채널C 이미지 자동 수집 — Serper + NB2 ═══
+  const runImagesC=async()=>{
+    if(!script||imageSpecs.length===0){showToast("이미지 스펙이 없습니다 (images 배열 확인)");return}
+    setAutoError("");setSelImgIdx(null);
+    const count=imageSpecs.length;
+    const imgUrls=[...images];
+    const alts={...serperAlts};
+    const failures=[];
+    for(let i=0;i<count;i++){
+      if(imgUrls[i]){console.log("⏭️ IMG"+(i+1)+" 이미 완료, 건너뜀");continue}
+      const spec=imageSpecs[i];
+      setAutoPhase("이미지 "+(i+1)+"/"+count+" "+(spec.type==="serper"?"검색":"생성")+"...");
+      try{
+        if(spec.type==="serper"){
+          const r=await callProxy(cfg.proxyUrl,{action:"searchImages",keyword:spec.keyword,num:6});
+          if(r.success&&r.images&&r.images.length>0){
+            imgUrls[i]=r.images[0].url;
+            alts[i]=r.images.slice(1,6).map(img=>img.url);
+          }else{throw new Error("검색 결과 없음: "+spec.keyword)}
+        }else{
+          imgUrls[i]=await _generateImageNB2(spec.prompt,"9:16");
+          alts[i]=[];
+        }
+        setImages([...imgUrls]);setSerperAlts({...alts});
+      }catch(e){
+        failures.push(i+1);
+        console.log("❌ IMG"+(i+1)+" 실패: "+e.message);
+        imgUrls[i]=null;setImages([...imgUrls]);
+      }
+    }
+    if(failures.length>0){setAutoPhase("에러");setAutoError("이미지 "+failures.join(",")+" 실패 — 클릭하여 개별 재시도");return}
+    setStep(3);setAutoPhase("이미지완료");
+  };
+
+  // ═══ ★ v11.10.0: 채널C 이미지 교체 — Serper 대체 후보 선택 / NB2 재생성 / 키워드 변경 ═══
+  const replaceImageC=async(idx,altUrl)=>{
+    if(altUrl){
+      const newImgs=[...images];newImgs[idx]=altUrl;setImages(newImgs);
+      showToast("✅ IMG"+(idx+1)+" 교체 완료");setSelImgIdx(null);return;
+    }
+  };
+  const researchImageC=async(idx,newKeyword)=>{
+    if(!newKeyword||isRunning)return;
+    setAutoPhase("IMG"+(idx+1)+" 재검색...");setAutoError("");
+    try{
+      const r=await callProxy(cfg.proxyUrl,{action:"searchImages",keyword:newKeyword,num:6});
+      if(r.success&&r.images&&r.images.length>0){
+        const newImgs=[...images];newImgs[idx]=r.images[0].url;setImages(newImgs);
+        const newAlts={...serperAlts};newAlts[idx]=r.images.slice(1,6).map(img=>img.url);setSerperAlts(newAlts);
+        const newSpecs=[...imageSpecs];newSpecs[idx]={...newSpecs[idx],keyword:newKeyword};setImageSpecs(newSpecs);
+        showToast("✅ IMG"+(idx+1)+" 재검색 완료");
+      }else{showToast("❌ 검색 결과 없음")}
+      setAutoPhase(images.every(u=>u)?"이미지완료":"대본완료");
+    }catch(e){setAutoPhase("에러");setAutoError("재검색 실패: "+e.message)}
+  };
+  const regenNB2ImageC=async(idx)=>{
+    if(isRunning)return;
+    const spec=imageSpecs[idx];
+    const prompt=spec?.prompt||spec?.keyword||"";
+    if(!prompt){showToast("프롬프트 없음");return}
+    setAutoPhase("IMG"+(idx+1)+" NB2 재생성...");setAutoError("");
+    try{
+      const url=await _generateImageNB2(prompt,"9:16");
+      const newImgs=[...images];newImgs[idx]=url;setImages(newImgs);
+      showToast("✅ IMG"+(idx+1)+" NB2 재생성 완료");
+      setAutoPhase(newImgs.every(u=>u)?"이미지완료":"대본완료");
+    }catch(e){setAutoPhase("에러");setAutoError("NB2 재생성 실패: "+e.message)}
   };
 
   // ★ v11.5.5: 순차 제출 유지 + callProxy timeout + 폴링 에러 감지 수정
@@ -2158,10 +2255,11 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     catch(e){setAutoPhase("에러");setAutoError("전송 실패: "+e.message)}
   };
 
-  // ★ v11.5.5: 개별 이미지 재생성 — 채널B만 NB2, 채널A는 📁 업로드 안내
+  // ★ v11.10.0: 개별 이미지 재생성 — 채널C는 클릭으로 교체 패널 열기
   const regenSingleImage=async(idx)=>{
     if(!script||isRunning)return;
-    if(isA||isC){showToast(isA?"채널A는 📁 이미지 업로드를 사용하세요":"채널C는 이미지 URL 직접 입력");return}
+    if(isA){showToast("채널A는 📁 이미지 업로드를 사용하세요");return}
+    if(isC){setSelImgIdx(selImgIdx===idx?null:idx);return}
     const prompt=script["img"+(idx+1)];
     if(!prompt){showToast("img"+(idx+1)+" 프롬프트 없음");return}
     setAutoPhase("이미지 "+(idx+1)+" 재생성");setAutoError("");
@@ -2257,8 +2355,8 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         </div>
         {autoPhase&&<div className="dk-side-sec">
           <div className="dk-side-label">ACTIONS</div>
-          {autoPhase==="대본완료"&&<>{isA?<button className="dk-act go" onClick={uploadImagesA}>이미지 업로드 →</button>:isC?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act go" onClick={runImages}>이미지 생성 →</button>}<button className="dk-act" onClick={()=>{if(picked)autoRun(picked)}}>대본 재생성</button></>}
-          {autoPhase==="이미지완료"&&<>{(isA||isC)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act go" onClick={runVideos}>영상 생성 →</button>}{isA?<button className="dk-act" onClick={uploadImagesA}>재업로드</button>:isC?null:<button className="dk-act" onClick={runImages}>이미지 재생성</button>}</>}
+          {autoPhase==="대본완료"&&<>{isA?<button className="dk-act go" onClick={uploadImagesA}>이미지 업로드 →</button>:isC?<button className="dk-act go" onClick={runImagesC}>이미지 수집 →</button>:<button className="dk-act go" onClick={runImages}>이미지 생성 →</button>}<button className="dk-act" onClick={()=>{if(picked)autoRun(picked)}}>대본 재생성</button></>}
+          {autoPhase==="이미지완료"&&<>{(isA||isC)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act go" onClick={runVideos}>영상 생성 →</button>}{isA?<button className="dk-act" onClick={uploadImagesA}>재업로드</button>:isC?<button className="dk-act" onClick={runImagesC}>이미지 재수집</button>:<button className="dk-act" onClick={runImages}>이미지 재생성</button>}</>}
           {autoPhase==="영상완료"&&<>{(isA||isC||subConfirmed)?<button className="dk-act go" onClick={runSend}>전송 →</button>:<button className="dk-act" disabled style={{opacity:0.4}}>자막 확정 필요</button>}<button className="dk-act" onClick={runVideos}>영상 재생성</button></>}
           {autoPhase==="에러"&&<><button className="dk-act err" onClick={()=>{if(picked)autoRun(picked)}}>재시도</button><button className="dk-act" onClick={()=>setShowManual(true)}>수동</button></>}
         </div>}
@@ -2283,14 +2381,36 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           <div style={{padding:"16px 24px"}}>
             <div style={{fontSize:13,fontWeight:700,color:"#fbbf24",marginBottom:8}}>📝 나레이션 ({(script.tts||script.tts1||"").length}자)</div>
             <div className="result-box" style={{marginBottom:12}}>{(script.tts||script.tts1||"").replace(/\|/g," ")}</div>
-            <div style={{fontSize:13,fontWeight:700,color:"#aaa",marginBottom:8}}>🖼️ 이미지 ({doneImgCount}/{imgSlotCount})</div>
-            <div className="img-grid" style={{gridTemplateColumns:"repeat(7,1fr)"}}>
-              {Array.from({length:imgSlotCount},(_,i)=>{const has=!!images[i];return(
-                <div key={i} className="img-cell" style={{border:has?"1px solid #4ade80":"1px solid #222"}}>
-                  {has?<img src={images[i]} alt="" style={{aspectRatio:"9/16"}} onClick={()=>setModalImg(images[i])}/>:<div className="img-placeholder" style={{aspectRatio:"9/16"}}>{i+1}</div>}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <span style={{fontSize:13,fontWeight:700,color:"#aaa"}}>🖼️ 이미지 ({doneImgCount}/{imageSpecs.length||imgSlotCount})</span>
+              <div className="c-legend"><span style={{"--dot":"#2563eb"}}>S = Serper</span><span style={{"--dot":"#7c3aed"}}>AI = NB2</span></div>
+            </div>
+            <div className="c-img-grid">
+              {Array.from({length:imageSpecs.length||imgSlotCount},(_,i)=>{const has=!!images[i];const spec=imageSpecs[i]||{};return(
+                <div key={i}>
+                  <div className={"c-img-cell"+(selImgIdx===i?" selected":"")} onClick={()=>regenSingleImage(i)}>
+                    {has?<img src={images[i]} alt=""/>:<div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:"#444",fontSize:11}}>{i+1}</div>}
+                    <div className={"c-img-badge "+(spec.type==="nb2"?"nb2":"serper")}>{spec.type==="nb2"?"AI":"S"}</div>
+                    <div className="c-img-num">{i+1}</div>
+                  </div>
+                  {spec.seg&&<div className="c-img-seg" title={spec.seg}>{spec.seg}</div>}
                 </div>
               )})}
             </div>
+            {selImgIdx!==null&&imageSpecs[selImgIdx]&&<div className="c-replace-panel">
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:13,fontWeight:700,color:"#eee"}}>IMG {selImgIdx+1} 교체</span>
+                <span style={{fontSize:11,color:"#888"}}>{imageSpecs[selImgIdx].keyword||"NB2 생성"}</span>
+                <button style={{marginLeft:"auto",background:"none",border:"none",color:"#666",fontSize:14,cursor:"pointer"}} onClick={()=>setSelImgIdx(null)}>✕</button>
+              </div>
+              {serperAlts[selImgIdx]&&serperAlts[selImgIdx].length>0&&<div className="c-replace-grid">
+                {serperAlts[selImgIdx].map((url,j)=><div key={j} className="c-replace-cell" onClick={()=>replaceImageC(selImgIdx,url)}><img src={url} alt=""/></div>)}
+              </div>}
+              <div style={{display:"flex",gap:6,marginTop:6}}>
+                <button style={{flex:1,fontSize:11,padding:"6px 0",background:"#1a1a28",border:"1px solid #333",borderRadius:6,color:"#aaa",cursor:"pointer"}} onClick={()=>{const kw=prompt("검색 키워드 입력:",imageSpecs[selImgIdx].keyword||"");if(kw)researchImageC(selImgIdx,kw)}}>🔍 다른 키워드</button>
+                <button style={{flex:1,fontSize:11,padding:"6px 0",background:"#1a1a28",border:"1px solid #333",borderRadius:6,color:"#aaa",cursor:"pointer"}} onClick={()=>regenNB2ImageC(selImgIdx)}>🎨 NB2 생성</button>
+              </div>
+            </div>}
           </div>
         :<div className="dk-cards">{Array.from({length:isA?4:SCENE_COUNT_B},(_,i)=>i).map(i=>{
           const tt=(script["tts"+(i+1)]||"").replace(/\|/g," ");
@@ -2382,9 +2502,9 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
           <div className={"ap-status"+(autoPhase==="에러"?" error":"")}>
             {autoPhase==="대본"&&"✍️ 대본 생성 중..."}
             {(autoPhase==="이미지 프롬프트 생성"||autoPhase==="영상 프롬프트 생성")&&"🔧 "+autoPhase+"..."}
-            {autoPhase==="대본완료"&&(isA?"✅ 대본 완료 — 📁 Storybook 이미지 업로드":"✅ 대본 완료 — 아래에서 확인 후 이미지 생성")}
+            {autoPhase==="대본완료"&&(isA?"✅ 대본 완료 — 📁 Storybook 이미지 업로드":isC?"✅ 대본 완료 — 이미지 수집 시작":"✅ 대본 완료 — 아래에서 확인 후 이미지 생성")}
             {(autoPhase.includes("이미지")&&autoPhase!=="이미지완료")&&"🎨 "+autoPhase}
-            {autoPhase==="이미지완료"&&(isA?"✅ 이미지 완료 — 확인 후 전송":"✅ 이미지 완료 — 확인 후 영상 생성")}
+            {autoPhase==="이미지완료"&&(isA?"✅ 이미지 완료 — 확인 후 전송":isC?"✅ 이미지 수집 완료 — 교체할 것 클릭 → 전송":"✅ 이미지 완료 — 확인 후 영상 생성")}
             {(autoPhase.includes("영상")&&autoPhase!=="영상완료"&&autoPhase!=="자막 추출 중...")&&"🎬 "+autoPhase}
             {autoPhase==="자막 추출 중..."&&"🔤 자막 추출 중..."}
             {autoPhase==="영상완료"&&(subConfirmed||(isA||isC)?"✅ 영상 완료 — 확인 후 전송":"✅ 영상 완료 — 자막 확인 후 전송")}
@@ -2397,14 +2517,14 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
             <div style={{marginTop:8,display:"flex",gap:6}}>
               <button className="btn btn-dark" onClick={()=>{if(picked)autoRun(picked)}} style={{flex:1}}>🔄 대본 재생성</button>
               {isA?<button className="btn btn-green" onClick={uploadImagesA} style={{flex:1}}>📁 이미지 업로드</button>
-                   :isC?<button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
+                   :isC?<button className="btn btn-purple" onClick={runImagesC} style={{flex:1}}>🖼️ 이미지 수집 →</button>
                    :<button className="btn btn-purple" onClick={runImages} style={{flex:1}}>🎨 이미지 생성 →</button>}
             </div>
           )}
           {autoPhase==="이미지완료"&&(
             <div style={{marginTop:8,display:"flex",gap:6}}>
               {isA?<button className="btn btn-dark" onClick={uploadImagesA} style={{flex:1}}>📁 이미지 재업로드</button>
-                   :isC?null
+                   :isC?<button className="btn btn-dark" onClick={runImagesC} style={{flex:1}}>🔄 이미지 재수집</button>
                    :<button className="btn btn-dark" onClick={runImages} style={{flex:1}}>🔄 이미지 재생성</button>}
               {(isA||isC)?(
                 <button className="btn btn-green" onClick={runSend} style={{flex:1}}>📤 전송 →</button>
@@ -2493,8 +2613,36 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
 
           {images.some(u=>u)&&(
             <div className="box">
-              <div className="step-hdr"><div className={"step-label"+(images.every(u=>u)?" done":"")}>③ 이미지 {doneImgCount}/{isA?12:SCENE_COUNT_B} {images.every(u=>u)&&"✓"}</div></div>
-              <div className={"img-grid"+(isA?" grid-a":"")}>
+              <div className="step-hdr"><div className={"step-label"+(images.filter(u=>u).length>=(imageSpecs.length||imgSlotCount)?" done":"")}>③ 이미지 {doneImgCount}/{imageSpecs.length||imgSlotCount} {images.filter(u=>u).length>=(imageSpecs.length||imgSlotCount)&&"✓"}</div></div>
+              {isC?<>
+                <div className="c-img-grid">
+                  {Array.from({length:imageSpecs.length||imgSlotCount},(_,i)=>{const has=!!images[i];const spec=imageSpecs[i]||{};return(
+                    <div key={i}>
+                      <div className={"c-img-cell"+(selImgIdx===i?" selected":"")} onClick={()=>regenSingleImage(i)}>
+                        {has?<img src={images[i]} alt=""/>:<div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:"#444",fontSize:11}}>{i+1}</div>}
+                        <div className={"c-img-badge "+(spec.type==="nb2"?"nb2":"serper")}>{spec.type==="nb2"?"AI":"S"}</div>
+                        <div className="c-img-num">{i+1}</div>
+                      </div>
+                    </div>
+                  )})}
+                </div>
+                {selImgIdx!==null&&imageSpecs[selImgIdx]&&<div className="c-replace-panel">
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                    <span style={{fontSize:12,fontWeight:700,color:"#eee"}}>IMG {selImgIdx+1}</span>
+                    <span style={{fontSize:10,color:"#888",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{imageSpecs[selImgIdx].keyword||"NB2"}</span>
+                    <button style={{background:"none",border:"none",color:"#666",fontSize:14,cursor:"pointer"}} onClick={()=>setSelImgIdx(null)}>✕</button>
+                  </div>
+                  {imageSpecs[selImgIdx].seg&&<div style={{fontSize:10,color:"#fbbf24",marginBottom:6}}>💬 {imageSpecs[selImgIdx].seg}</div>}
+                  {serperAlts[selImgIdx]&&serperAlts[selImgIdx].length>0&&<div className="c-replace-grid">
+                    {serperAlts[selImgIdx].map((url,j)=><div key={j} className="c-replace-cell" onClick={()=>replaceImageC(selImgIdx,url)}><img src={url} alt=""/></div>)}
+                  </div>}
+                  <div style={{display:"flex",gap:4,marginTop:6}}>
+                    <button style={{flex:1,fontSize:10,padding:"5px 0",background:"#1a1a28",border:"1px solid #333",borderRadius:6,color:"#aaa",cursor:"pointer"}} onClick={()=>{const kw=prompt("키워드:",imageSpecs[selImgIdx].keyword||"");if(kw)researchImageC(selImgIdx,kw)}}>🔍 재검색</button>
+                    <button style={{flex:1,fontSize:10,padding:"5px 0",background:"#1a1a28",border:"1px solid #333",borderRadius:6,color:"#aaa",cursor:"pointer"}} onClick={()=>regenNB2ImageC(selImgIdx)}>🎨 NB2</button>
+                  </div>
+                </div>}
+              </>
+              :<div className={"img-grid"+(isA?" grid-a":"")}>
                 {Array.from({length:isA?12:SCENE_COUNT_B},(_,i)=>i).map(i=>(
                   <div key={i} className={"img-cell"+(isA?" ratio-1":"")}>
                     {images[i]?<img src={images[i]} alt={"IMG"+(i+1)} onClick={()=>setModalImg(images[i])}/>:<div className={"img-placeholder"+(isA?" ratio-1":"")}>{"IMG"+(i+1)}</div>}
@@ -2510,7 +2658,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
                     </div>
                   </div>
                 ))}
-              </div>
+              </div>}
             </div>
           )}
         </div>
