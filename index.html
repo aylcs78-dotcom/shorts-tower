@@ -2265,13 +2265,25 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
 
           // ── Step 2: Whisper 자막 추출 (120초 타임아웃) ──
           setAutoPhase("자막 추출 중...");
-          const wRes=await callProxy(cfg.proxyUrl,{action:"whisperTranscribe",falApiKey:cfg.falKey,audioUrl:check.url,language:"ko"},120000);
+          // ★ v11.10.5: TTS 원문을 prompt로 전달 → 환각 대폭 감소
+          const wRes=await callProxy(cfg.proxyUrl,{action:"whisperTranscribe",falApiKey:cfg.falKey,audioUrl:check.url,language:"ko",prompt:tts},120000);
           if(!wRes.success) throw new Error("Whisper 실패: "+(wRes.error||""));
-          // ★ v11.10.4: Whisper "TTS" 환각 + 태그 잔여물 필터링
-          const words=(wRes.words||[]).filter(w=>{
+          // ★ v11.10.5: 환각 필터 3단계 — ①TTS/태그 제거 ②TTS 원문 대조 트리밍
+          let words=(wRes.words||[]).filter(w=>{
             const t=(w.text||"").trim();
             return t && t.toLowerCase()!=="tts" && !t.match(/^\[.*\]$/);
           });
+          if(words.length>0&&tts.length>0){
+            const firstChar=tts.charAt(0);
+            const startIdx=words.findIndex(w=>w.text.includes(firstChar));
+            if(startIdx>0) words=words.slice(startIdx);
+            const lastChars=tts.slice(-3).replace(/[.\s]/g,"");
+            let endIdx=words.length-1;
+            for(let i=words.length-1;i>=Math.max(0,words.length-5);i--){
+              if(lastChars.split("").some(c=>words[i].text.includes(c))){endIdx=i;break}
+            }
+            if(endIdx<words.length-1) words=words.slice(0,endIdx+1);
+          }
           // 10자 이내 청크로 묶기
           const chunks=[];let buf="";let bufStart=0;
           for(const w of words){
