@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.10.9</title>
+<title>Shorts 관제탑 v11.11.0</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -612,10 +612,12 @@ function buildJSON_C(imgUrls,tts,hookL1,hookL2,voiceId,audioUrl,whisperChunks){
 
   const compEls=[...imgEls,...subEls];
 
-  // ★ v11.10.4: audioUrl 있으면 프리렌더 오디오 사용, 없으면 [tts] 폴백 (발음 교정 적용)
+  // ★ v11.11.0: data URI는 Creatomate가 다운로드 불가 → [tts]+provider 폴백
+  // 실제 URL(https://...)만 프리렌더 오디오로 사용
   const ttsSpeech=unitToKorean(tts);
-  const audioSource=audioUrl?audioUrl:("[tts]"+ttsSpeech+"[/tts]");
-  const audioEl=audioUrl
+  const hasRealUrl=audioUrl&&audioUrl.startsWith("http");
+  const audioSource=hasRealUrl?audioUrl:("[tts]"+ttsSpeech+"[/tts]");
+  const audioEl=hasRealUrl
     ?{type:"audio",name:"VO",source:audioSource}
     :{type:"audio",name:"VO",source:audioSource,provider:prov};
 
@@ -720,7 +722,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.10.9</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.11.0</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"B+C":"C only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -2275,15 +2277,23 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         }
         if(endIdx<words.length-1) words=words.slice(0,endIdx+1);
       }
-      // 10자 이내 청크로 묶기
+      // ★ v11.11.0: 문맥 기반 자막 묶기 (글자수 + 조사/어미 경계 인식)
+      // 원칙: 8~15자 범위, 조사/어미/문장부호에서 끊기
       const chunks=[];let buf="";let bufStart=0;
+      const breakAfter=/[.?!,]$|다고|해버|했는데|했다고|인데|거임|아픔|캐나다임|한국임|통과함|는데$/;
       for(const w of words){
-        if(buf.length>0&&(buf+" "+w.text).length>10){
+        const candidate=buf?buf+" "+w.text:w.text;
+        if(buf.length>=8&&candidate.length>15){
+          // 버퍼가 이미 8자 이상이고 합치면 15자 초과 → 현재 버퍼를 flush
           chunks.push({text:buf,start:bufStart,end:w.start});
           buf=w.text;bufStart=w.start;
+        }else if(buf.length>=6&&breakAfter.test(candidate)){
+          // 6자 이상이고 자연스러운 끊김점 → flush
+          chunks.push({text:candidate,start:bufStart,end:w.end});
+          buf="";bufStart=0;
         }else{
           if(!buf)bufStart=w.start;
-          buf=buf?buf+" "+w.text:w.text;
+          buf=candidate;
         }
       }
       if(buf)chunks.push({text:buf,start:bufStart,end:words.length>0?words[words.length-1].end:0});
