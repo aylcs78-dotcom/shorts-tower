@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.10.7</title>
+<title>Shorts 관제탑 v11.10.9</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -348,6 +348,8 @@ function makeSubtitleChunks(fullText,totalDur,styleOverride){
 // ★ v11.3.3: 영어 단위를 한글 음차로 변환 (음성용만, 자막은 원본 유지)
 function unitToKorean(txt){
   return (txt||"")
+    .replace(/(\d),(\d)/g,"$1$2")  // ★ v11.10.7: 숫자 내 콤마 제거 (1,341 → 1341)
+    .replace(/(\d+(?:\.\d+)?)\s*%/g,"$1퍼센트")  // ★ v11.10.7: % → 퍼센트
     .replace(/(\d+(?:\.\d+)?)\s*cm/gi,"$1센치")
     .replace(/(\d+(?:\.\d+)?)\s*mm/gi,"$1밀리")
     .replace(/(\d+(?:\.\d+)?)\s*kg/gi,"$1킬로")
@@ -576,7 +578,7 @@ function buildJSON_B(videoUrls,tts,mood,hook,subtitleData){
 // ═══ ★ v11.10.0: buildJSON_C — 채널C 잡학중독: 단일 나레이션 + 이미지 시퀀스 ═══
 // ★ v11.10.0: Creatomate 프리렌더 오디오 URL + Whisper 자막 사용
 function buildJSON_C(imgUrls,tts,hookL1,hookL2,voiceId,audioUrl,whisperChunks){
-  const prov="elevenlabs model_id=eleven_multilingual_v2 voice_id="+(voiceId||VID_C)+" stability=0.55 similarity_boost=0.70 style=0.15 use_speaker_boost=true";
+  const prov="elevenlabs model_id=eleven_multilingual_v2 voice_id="+(voiceId||VID_C)+" stability=0.40 similarity_boost=0.70 style=0.30 use_speaker_boost=true";
   const validImgs=imgUrls.filter(u=>u&&u.length>5);
   const imgCount=validImgs.length||1;
   const imgEls=validImgs.map((url,i)=>{
@@ -718,7 +720,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.10.7</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.10.9</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"B+C":"C only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -2242,12 +2244,13 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     const tts=script.tts||script.tts1||"";
     if(!tts){showToast("TTS 텍스트 없음");return}
     if(!cfg.elevenLabsKey){showToast("ElevenLabs API 키 필요 — 설정에서 입력");return}
-    const ttsSpeech=unitToKorean(tts);
+    // ★ v11.10.7: toSpeechKorean 적용 (숫자→한글 + 단위 변환)
+    const ttsSpeech=toSpeechKorean(tts);
 
     try{
       // ── Step 1: ElevenLabs 직접 TTS 생성 ──
       setAutoPhase("음성 생성 중...");
-      const ttsRes=await callProxy(cfg.proxyUrl,{action:"generateTTS",text:ttsSpeech,voiceId:VID_C,elevenLabsKey:cfg.elevenLabsKey,stability:0.55,similarityBoost:0.70,style:0.15},60000);
+      const ttsRes=await callProxy(cfg.proxyUrl,{action:"generateTTS",text:ttsSpeech,voiceId:VID_C,elevenLabsKey:cfg.elevenLabsKey,stability:0.40,similarityBoost:0.70,style:0.30},60000);
       if(!ttsRes.success) throw new Error("TTS 생성 실패: "+(ttsRes.error||""));
       setTtsAudioUrl(ttsRes.audioUrl);
       console.log("✅ 채널C ElevenLabs TTS 완료: "+ttsRes.audioUrl.substring(0,60));
