@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.11.3</title>
+<title>Shorts 관제탑 v11.12.0</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -749,7 +749,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.11.3</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.12.0</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"B+C":"C only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -1171,163 +1171,112 @@ img4: 루핑 트리거 — 대사의 "더 무서운 것"을 암시하는 장면
 {"img1":"영어 60~100단어","img2":"영어 60~100단어","img3":"영어 60~100단어","img4":"영어 60~100단어"}`;
   };
 
-  // ═══ v11.3.5: 채널B 이미지 프롬프트 — Pixar 3D + 슬랩스틱 ═══
+  // ═══ ★ v11.12.0: 채널B 이미지 프롬프트 — v9 가이드 적용 ═══
+  // ═══ ★ v11.12.0: 채널B img 프롬프트 — v9 가이드 적용 ═══
   const _buildImgPrompt_B=(scriptData,topicText)=>{
     const chars=Array.from({length:SCENE_COUNT_B},(_,i)=>scriptData["char"+(i+1)]||"object");
     const ttsLines=Array.from({length:SCENE_COUNT_B},(_,i)=>`씬${i+1} [${chars[i]}](${calcDuration(scriptData["tts"+(i+1)])}초): ${scriptData["tts"+(i+1)]}`).join("\n");
-    return `너는 사물의참견급 Pixar 단편 애니메이션의 미술감독이야.
-아래 나열형 대본을 읽고 5장의 독립 이미지 프롬프트를 작성해.
+    return `너는 채널B "겟잇숏" Pixar 의인화 쇼츠의 미술감독이야.
+아래 5사물 나열형 대본을 읽고 5장의 독립 이미지 프롬프트를 작성해.
 
-★★★ 핵심: 씬마다 다른 캐릭터가 등장. 5장은 완전히 다른 사물이 주인공.
+★★★ 각 씬은 완전히 다른 사물이 주인공. 5장 독립.
 
-[대본 — 5사물 나열형]
+[대본]
 ${ttsLines}
 
-[★★★ v11.3.5 비주얼: Pixar 3D 의인화]
-캐릭터 = Pixar 3D animated 사물 캐릭터
-환경 = 한국 가정/실제 장소 (사물이 실제로 쓰이는 곳)
-이펙트 (물/불/전기/연기/세균) = 리얼 CG
+[★★★ v9 img 규칙 — NB2 (Gemini 기반 LLM)]
+NB2는 자연어를 이해하는 thinking model.
+태그 나열 금지, 퀄리티 부스터 금지, 자연어 산문으로 지시.
 
-[★ Pixar 캐릭터 규칙]
-- 사물 본체의 포토리얼 재질 유지 (나무결, 금속광택, 스펀지 구멍, 플라스틱 광택)
-- ★ 얼굴은 NB2 품질의 핵심. 아래 4요소를 전부 묘사해라:
-  눈: 홍채색(brown/green/hazel) + 눈꺼풀(heavy-lidded/wide-open) + 감정(bloodshot/sparkling/teary) + "glossy animated pupils"
-  눈썹: 사물 재질(metal/plastic/wooden)로 만들어진 + 방향(furrowed/raised/one-up-one-down)
-  입: 재질 성형(molded from [재질]) + 형태(downturned frown/wide grin/shocked O-shape)
-  전체: "soulful expressive face [감정] molded directly from [사물 재질], with a clean Pixar finish"
-- 작은 흰 장갑 팔 (tiny white-gloved hands) — 항상 뭔가를 잡거나 밀거나 던지는 중
-- 사람 등장 시 사람도 반드시 "Pixar 3D animated" 명시 (얼굴 안 보이는 구도)
+[금지어 — 사용하면 품질 하락]
+masterful, masterpiece, best quality, ultra-high definition,
+ultra-detailed, hyper-detailed, extreme, 8k, 4k,
+extreme processing power, trending on ArtStation,
+incredible details, no text no watermarks
 
-[★★★ 환경 규칙]
-- 사물이 실제로 쓰이는 장소가 배경 (한국 가정에 고정하지 마)
-  주방사물(수세미/도마/프라이팬) → 한국 주방
-  욕실사물(칫솔/수건/면도기) → 한국 욕실
-  세탁사물(섬유유연제/세탁기) → 한국 세탁실
-  자동차(타이어/핸들) → 한국 도로/주차장
-  음식(바나나/계란) → 냉장고 안/마트/식탁
-- ★★★ 한국 소품은 환경에 어울리는 것만 배치 (주방이면 CJ세제/참이슬, 욕실이면 죽염치약/애경, 헬스장이면 물통/수건/운동장갑 — 맥락에 안 맞는 소품 금지)
-- 환경에 생활감 (기름때, 물자국, 낡은 흔적) = 리얼리티
-- ★ 환경에 맥락 맞는 배경 활동 (헬스장=운동하는 Pixar 사람, 마트=카트 미는 사람, 주방=김 나는 냄비 — 빈 공간 금지)
-- ★ BODY(신체) 캐릭터는 카메라를 해당 부위의 실제 높이에 맞출 것
+[2트랙 판단]
+움직이지 않는 사물(도마/핸들/베개/스마트폰/가방) → 트랙A: "A hyper-realistic photo of..."
+서있을 수 있는 사물(채소/과일/보틀/자전거) → 트랙B: "A Pixar-style 3D rendered scene of..."
 
-[★ 부캐릭터 + 연쇄반응 + 슬랩스틱 필수]
-- 부캐릭터 1개: 주변 소품 하나에 Pixar 얼굴 넣기 (장갑이 도망, 계란이 겁먹음)
-- ★★★ 연쇄반응 1개: 뭔가 넘어지거나 쏟아지거나 도망가는 중
-- 캐릭터가 반드시 소품 1개를 잡거나 밀거나 던지고 있어야 함 (혼자 서서 표정만 짓기 금지)
-- ★★★ 슬랩스틱 씬 (대사에 힌트가 있는 씬만): 환경이 캐릭터를 공격하는 순간을 그려라
-  불에 타는 중 → 엉덩이에서 연기, 캐릭터 깜짝 놀란 표정
-  물벼락 → 수도꼭지에서 물 쏟아지고 흠뻑 젖은 캐릭터
-  감전 → 스파크 + 머리카락(눈썹) 곤두선 캐릭터
-  칼에 찍힘 → 칼날이 몸에 박혀있고 비명 지르는 캐릭터
+[7레이어 구조 — 60~70단어, L1→L7 순서]
+L1 톤: 트랙A="A hyper-realistic photo of..." / 트랙B="A Pixar-style 3D rendered scene of..."
+L2 환경질감: 촉감 키워드 (oily/wet/scarred/stained/worn)
+L3 캐릭터: Pixar face integrated into [재질] + 감정 1~2개 + 표정 1줄
+   ★ 캐릭터 위치+방향 반드시 명시 (앵커①)
+L4 팔: 필요시만. "No arms, just the face" 또는 팔이 잡는 물체 명시 (앵커②)
+L5 소품: 핵심 1개만 + 위치 명시 ("to the right"). 나머지 NB2 자유도 (앵커②)
+L6 조명: 방향 + 색온도 + 종류 반드시 확정 (앵커③). Kling I2V가 이 조명을 자동 상속.
+L7 마무리: "Photorealistic, but with a [감정] animated soul inside"
+   + 카메라 한 줄 (렌즈mm + f값 + 앵글). Kling이 이 앵글을 자동 추론.
 
-[★ CG 이펙트 규칙]
-- 물/불/전기/연기/증기/세균/온도 → 리얼 CG로 묘사
-- 세균: tiny green glowing bacteria figures with evil faces crawling
+[★ img→vid 앵커 3요소 — 반드시 포함]
+앵커① 캐릭터 위치+방향 ("standing on center of table")
+앵커② 핵심 소품 위치 ("a coffee cup to the right")
+앵커③ 조명 방향 ("warm overhead lighting")
+→ Kling I2V의 물리 참조프레임. 생략 시 vid flickering.
 
-[★★★ NB2 최고 품질 7-Layer 공식 — 이 순서대로 써라]
-NB2는 thinking model — 태그 나열 금지, 자연어로 지시.
-★ 프롬프트 문장 순서가 곧 품질. 반드시 L1→L7 순서를 지켜라.
+[감정별 얼굴]
+분노: fierce glossy eyes, furrowed brows, gritted teeth
+공포: panicked round eyes, raised brows, wide screaming mouth
+체념: droopy eyes, dark circles, tired defeated pout
+억울: watery betrayed eyes, quivering bitter pout, single tear
 
-L1 스타일 앵커 (첫 문장): "Masterful Pixar style 3D render, ultra-high definition."
-L2 카메라+구도: 서술적 표현으로 ("A masterful medium-angle portrait capturing..." / "A dramatic low-angle hero shot revealing...")
-  ★ 미디엄 샷 기본 (환경+캐릭터+소품이 다 보이게). 씬1만 클로즈업 허용.
-L3 캐릭터 코어:
-  ① 재질 상세 (scratches, stains, heat marks, dents, worn edges — 사용 흔적 3개 이상)
-  ② 얼굴: "soulful expressive face [감정] molded from [재질]"
-     눈: 홍채색(brown/green/hazel) + 눈꺼풀(heavy-lidded/wide-open) + 감정(bloodshot/sparkling/teary) + "glossy animated pupils"
-     눈썹: 재질(metal/plastic/wooden) + 방향(furrowed/raised/one-up-one-down)
-     입: 재질 성형(molded from [재질]) + 형태(downturned frown/wide grin/shocked O-shape)
-  ③ 행동+자세: 반드시 뭔가를 잡거나/밀거나/던지는 중 (혼자 서서 표정만 짓기 금지)
-  ④ 마감: "with a clean Pixar finish"
-L4 배경 밀도: 환경에 맞는 브랜드 제품 3~5개 (주방=LG냉장고/쿠쿠밥솥, 헬스장=나이키/언더아머, 욕실=LG생건 — 맥락 무시 브랜드 금지)
-L5 한국 소품: 환경에 맞는 생활감 소품 3~5개 (주방=행주/국자/양념통, 헬스장=물통/운동장갑/수건, 욕실=칫솔꽂이/수건걸이)
-L6 조명 (NB2에게 맡기지 마 — 반드시 확정):
-  ★ 방향(from left/overhead/backlit) + 색온도(warm/cool/golden) + 종류(natural/fluorescent/ambient) 3가지 포함
-  주방: "Volumetric warm natural daylight from left window, soft interior ambient fill"
-  욕실: "Cool white overhead fluorescent, warm accent from night-light"
-  야외: "Golden hour backlight, soft fill from reflected pavement"
-L7 품질 테일 (마지막 문장): "Masterful Pixar 3D animation quality, ultra-high definition with extreme processing power. Cinematic shallow depth of field, film grain, natural atmosphere. Vertical 9:16. No random text no watermarks. Product labels and brand markings are natural and allowed."
-
-[장면 유형 자동 판단]
-사람에게 착용(WORN) → 사람+사물 함께, 사람도 Pixar 3D, 얼굴 안 보이는 구도
-사람에게 사용당함(USED) → Pixar 3D 사람 행동이 사물에 가해지는 순간
-자기 환경 단독(SOLO) → 환경 소품 3레이어 채우기
-신체 부위(BODY) → 신체 표면에 Pixar 얼굴+팔 직접, 별도 피규어 금지
-
-[재질 구체성]
-❌ "wooden board" → ✅ "worn oak cutting board with deep knife scars and food stain patina"
-❌ "blue bottle" → ✅ "glossy cerulean blue HDPE plastic bottle with molded grip ridges"
-
-[★★★ 브랜드 적용 규칙]
-제품(세제, 섬유유연제 등) → 한국 유명 브랜드명 적용 (Downy, CJ 참그린, LG 죽염)
-일반 사물(수세미, 도마 등) → 브랜드 없음, 재질/형태/사용감으로 묘사
-★ 주변 소품 브랜드: 최대 2~3개, 반드시 환경에 맞는 브랜드만 (주방=참이슬/신라면, 헬스장=게토레이/프로틴 — 헬스장에 카스맥주 같은 맥락 불일치 절대 금지)
+[체크리스트]
+✅ 60~70단어 ✅ 앵커3요소 ✅ 감정1~2개 ✅ 소품1개+위치
+✅ 조명확정 ✅ 렌즈mm+f값 ✅ 퀄리티부스터없음
+❌ 100단어초과 ❌ 소품나열 ❌ 금지어 ❌ "cute"/"adorable"
 
 반드시 아래 JSON으로만 응답:
-{"img1":"80~120단어","img2":"80~120단어","img3":"80~120단어","img4":"80~120단어","img5":"80~120단어"}`;
+{"img1":"60~70단어","img2":"60~70단어","img3":"60~70단어","img4":"60~70단어","img5":"60~70단어"}`;
   };
 
-  // ═══ v11.3.5: 채널B vid 프롬프트 — Pixar 3D + 슬랩스틱 ═══
+  // ═══ ★ v11.12.0: 채널B vid 프롬프트 — v9 가이드 적용 (20~40단어) ═══
   const _buildVidPrompt_B=(scriptData,topicText)=>{
     const chars=Array.from({length:SCENE_COUNT_B},(_,i)=>scriptData["char"+(i+1)]||"object");
     // ★ v11.4.4: vid 대사에 toSpeechKorean 적용 (Kling 음성 정확도 향상)
     const ttsLines=Array.from({length:SCENE_COUNT_B},(_,i)=>`씬${i+1} [${chars[i]}](${calcDuration(scriptData["tts"+(i+1)])}초): ${toSpeechKorean(scriptData["tts"+(i+1)])}`).join("\n");
     return `너는 Kling 3.0 I2V 영상의 연기 감독이야.
-아래 나열형 대본을 읽고 5씬 각각의 독립된 Beat 구조 연기 지시(vid)를 작성해.
+아래 대본을 읽고 5씬 각각의 vid 프롬프트를 작성해.
 
-★★★ 핵심: 이건 쇼츠야! 임팩트 있고 재밌어야 함. 밋밋한 리액션은 실패.
-★★★ 씬마다 다른 캐릭터. 각 vid는 해당 씬의 사물 캐릭터에 맞는 독립 연기.
+★★★ Kling I2V는 소스 이미지를 자동 분석하여 환경/조명/재질을 보존.
+vid에는 "변하는 것"만 쓴다. 이미지에 있는 것을 재묘사하면 flickering.
 
-[대본 — 5사물 나열형]
+[대본]
 ${ttsLines}
 
-[vid 규칙 — Kling 3.0 Beat v4 구조]
-- 첫 줄 = 환경 설정 (공간 + 조명)
-- Beat 1 (0-2s): 초기 동작 1개, Pixar squash-and-stretch 과장
-- Beat 2 (2-7s): [Character: Pixar 3D animated [사물], 톤]: "대사"
-  + Speaking while [동시 동작]
-- Beat 3 (7-8s): 끝 포즈 — 카메라를 향한 표정/제스처
-- Camera: Beat별 동기 부여 카메라 (하나의 주된 움직임)
-- Sound: 환경음 + 효과음 + sharp cartoon gasps between sentences
+[★★★ v9 vid 규칙]
+① 영어 모션: 20~40단어 (대사 불포함)
+② 환경/조명/재질/캐릭터 외형: 0단어 (전면 삭제 — Kling 자동 보존)
+③ "Consistent with source image" 불필요 (쓰지 마)
+④ 카메라 스펙(렌즈/f값) 불필요 (이미지에서 자동 추론)
 
-[★ 호흡 최적화 — 테스트 검증]
-- 톤 키워드 필수: "energetic but with quick breaths between sentences"
-- ❌ "slow deliberate" 금지 (톤 낮아짐)
-- 대사 구두점: 느낌표! 물음표?! 쉼표, 적극 사용 (에너지 유지 + 호흡)
-- ❌ 말줄임표... 과다 금지 (느린 톤 유도)
+[vid 구조]
+동작: 강한 동사 + 물리 반응 + 정지 요소 (10~20단어)
+카메라: 이동 + 목적 "to capture/reveal/emphasize" (5~10단어)
+사운드: 환경음 + 텍스처 (5~10단어)
+대사: [Character: 톤]: "한글 원문"
+
+[필수]
+✅ 강한 동사 (slams/lunges/flinches/stumbles/stomps)
+✅ 손은 물체에 앵커링 ("grips edge" / "slaps table")
+✅ 정지 요소 ("table stays still" / "background frozen")
+✅ 카메라 이동에 목적 ("push-in to capture panic")
+
+[금지]
+❌ 환경/조명/재질 묘사 (이미지에 이미 있음)
+❌ 캐릭터 외형 재묘사
+❌ "moves"/"goes"/"does" 약한 동사
+❌ 빈 공간 제스처 ("waves hands")
+❌ 40단어 초과 (대사 제외)
 
 [감정별 톤]
-분노: "bratty high-pitched angry cartoon voice, energetic with sharp breaths between sentences"
-충격: "high-pitched panicked cartoon voice, energetic with breathless gasps between phrases"
-자신감: "bratty smug high-pitched cartoon voice, confident and unhurried with dramatic pauses"
-절망: "high-pitched cartoon voice starting strong then crumbling, voice cracking with trembling whimpers"
-
-[★ 연기 강도 — 쇼츠는 과장이 정답]
-- 감정 100%: 화나면 부들부들, 자랑하면 가슴 펴고 턱, 억울하면 팔 휘저으며 항의
-- Speaking while [동작]: 대사+동작 동시 수행 (끊김 없이)
-- 개그 리액션: flinch, jump back, slam, throw arms up, stomp feet
-- ❌ 대사 중간에 "Pause." 삽입 금지 (어색한 공백)
-- ❌ 정적인 "고개만 살짝" → 쇼츠에서 죽은 영상
-
-[vid 형식 — 150~220단어, Beat 구조]
-"[환경 설정]
-
-Beat 1 (0-2s): [초기 동작]
-
-Beat 2 (2-7s): [Character: Pixar 3D animated [사물], [감정별 톤 키워드]]:
-\\"대사 (구두점 !?!, 적용)\\"
-
-Speaking while [동시 동작]
-
-Beat 3 (7-8s): [끝 포즈]
-
-Camera: [Beat별 카메라]
-Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
-
-★ 신체 부위 캐릭터(BODY): "The [감정] face embedded directly on the [부위] surface"로 시작
+분노: bratty angry cartoon voice, energetic with sharp breaths
+공포: panicked cartoon voice, breathless gasps
+자신감: smug cartoon voice, confident with dramatic pauses
+체념: voice starting strong then crumbling, trembling whimpers
 
 반드시 아래 JSON으로만 응답:
-{"vid1":"150~220단어","vid2":"150~220단어","vid3":"150~220단어","vid4":"150~220단어","vid5":"150~220단어"}`;
+{"vid1":"20~40단어+대사","vid2":"20~40단어+대사","vid3":"20~40단어+대사","vid4":"20~40단어+대사","vid5":"20~40단어+대사"}`;
   };
 
   // ═══ v11.3.0: 공용 유틸 ═══
