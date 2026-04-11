@@ -360,6 +360,38 @@ function unitToKorean(txt){
     .replace(/\bLED\b/g,"엘이디").replace(/\bDNA\b/g,"디엔에이")
     .replace(/\bAI\b/g,"에이아이").replace(/\bpH\b/g,"피에이치");
 }
+// ★ v11.11.1: 채널C 전용 — 숫자+단위 한글 변환 (Kling 발음교정 P배열 제외)
+// ElevenLabs는 한국어 발음을 자체 처리하므로 겹받침 음차 불필요
+// transcript_source 자막에 "업써" 같은 음차가 노출되는 것 방지
+function toSpeechKoreanC(txt){
+  if(!txt)return"";
+  let s=unitToKorean(txt);
+  const digitMap=["영","일","이","삼","사","오","육","칠","팔","구"];
+  const posMap=["","십","백","천","만"];
+  function numToKr(n){
+    if(n===0)return"영";
+    const str=String(n);const len=str.length;let result="";
+    for(let i=0;i<len;i++){
+      const d=parseInt(str[i]);const pos=len-1-i;
+      if(d===0)continue;
+      if(d===1&&pos>0)result+=posMap[pos];
+      else result+=digitMap[d]+(posMap[pos]||"");
+    }
+    return result||"영";
+  }
+  const nativeMap=["영","한","두","세","네","다섯","여섯","일곱","여덟","아홉","열"];
+  function numToNative(n){
+    if(n>=1&&n<=10)return nativeMap[n];
+    if(n>=11&&n<=19)return"열"+nativeMap[n-10];
+    if(n===20)return"스무";
+    return numToKr(n);
+  }
+  s=s.replace(/(\d+)\s*(번|개|마리|가지|장|잔|병|벌|켤레|그릇|살|명)/g,
+    (_,num,unit)=>numToNative(parseInt(num))+" "+unit);
+  s=s.replace(/(\d+)\s*(배|도|초|분|시간|만|억|원|퍼센트|위|그램|리터|센치|밀리|킬로|밀리그램|밀리리터|킬로미터)/g,
+    (_,num,unit)=>numToKr(parseInt(num))+" "+unit);
+  return s;
+}
 // ★ v11.3.5: 숫자+단위를 한글 발음으로 변환 (vid 프롬프트 대사 전용, 자막에는 적용 안 함)
 // Kling 네이티브 오디오가 "200배"를 제대로 못 읽음 → "이백 배"로 변환
 function toSpeechKorean(txt){
@@ -575,43 +607,67 @@ function buildJSON_B(videoUrls,tts,mood,hook,subtitleData){
   ]});
 }
 
-// ═══ ★ v11.11.1: buildJSON_C — 채널A 방식 적용 (provider+transcript_source) ═══
-// ★ Whisper/Drive 의존 제거. Creatomate가 ElevenLabs 직접 호출 + 자막 자동 생성
-function buildJSON_C(imgUrls,tts,hookL1,hookL2,voiceId){
+// ═══ ★ v11.11.1: buildJSON_C — 4구간 composition (채널A 방식, 대사-이미지 싱크 보장) ═══
+// 각 구간: 독립 composition (TTS + 이미지 N장 + transcript_source 자막)
+// TTS 길이가 composition 길이를 결정 → 이미지가 자동으로 그 안에 배분됨
+const SCENE_COUNT_C=4;
+function buildJSON_C(imgUrls,ttsArr,hookL1,hookL2,voiceId){
   const prov="elevenlabs model_id=eleven_multilingual_v2 voice_id="+(voiceId||VID_C)+" stability=0.40 similarity_boost=0.70 style=0.30 use_speaker_boost=true";
-  const ttsSpeech=unitToKorean(tts);
+  // 구간별 이미지 분배: imgUrls는 flat 배열, ttsArr는 4개
+  // 각 구간의 이미지 수는 해당 구간 대사 길이에 비례
+  const totalLen=ttsArr.reduce((s,t)=>s+(t||"").length,0)||1;
   const validImgs=imgUrls.filter(u=>u&&u.length>5);
-  const imgCount=validImgs.length||1;
-  // 글자수 기반 예상 길이 (ElevenLabs ~6자/초)
-  const estDuration=Math.max(20,Math.round(tts.length/6));
-  const perImg=estDuration/imgCount;
-  const imgEls=validImgs.map((url,i)=>{
-    return {type:"image",source:url,
-      time:parseFloat((i*perImg).toFixed(1)),
-      duration:parseFloat(perImg.toFixed(1)),
-      width:"110%",height:"110%",fit:"cover",
-      animations:[{type:"scale",start_scale:"100%",end_scale:"105%",easing:"linear"}]};
+  const totalImgs=validImgs.length;
+  // 구간별 이미지 수 계산 (최소 1장)
+  let imgCounts=ttsArr.map(t=>Math.max(1,Math.round(((t||"").length/totalLen)*totalImgs)));
+  // 합계 보정
+  let diff=totalImgs-imgCounts.reduce((s,n)=>s+n,0);
+  for(let i=0;diff!==0&&i<4;i++){
+    if(diff>0){imgCounts[i]++;diff--}
+    else if(diff<0&&imgCounts[i]>1){imgCounts[i]--;diff++}
+  }
+
+  let imgIdx=0;
+  const scenes=ttsArr.map((tts,i)=>{
+    const vo="VO-"+(i+1);
+    const ttsSpeech=toSpeechKoreanC(tts||"");
+    const sceneImgCount=imgCounts[i];
+    const ttsLen=(tts||"").length;
+    const sceneDur=Math.max(5,Math.round(ttsLen/6));
+    const perImg=sceneDur/sceneImgCount;
+
+    const imgEls=[];
+    for(let j=0;j<sceneImgCount;j++){
+      const isLast=j===sceneImgCount-1;
+      imgEls.push({type:"image",source:validImgs[imgIdx]||"",
+        time:parseFloat((j*perImg).toFixed(1))+" s",
+        duration:isLast?null:parseFloat(perImg.toFixed(1))+" s",
+        width:"110%",height:"110%",fit:"cover",
+        animations:[{type:"scale",start_scale:"100%",end_scale:"105%",easing:"linear"}]});
+      imgIdx++;
+    }
+
+    const comp={type:"composition",track:1,clip:true,y:"55%",width:"100%",height:"75%",elements:[
+      ...imgEls,
+      {name:vo,type:"audio",source:ttsSpeech,provider:prov},
+      {type:"text",transcript_source:vo,transcript_maximum_length:8,transcript_split:"word",
+        y:"85%",width:"90%",x_alignment:"50%",y_alignment:"50%",
+        fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",
+        font_family:"Noto Sans KR",font_weight:"900",font_size:"8 vmin",
+        background_color:"rgba(0,0,0,0.7)",background_x_padding:"25%",background_y_padding:"20%",background_border_radius:"10%"}
+    ]};
+    if(i>0){comp.animations=[{time:"start",duration:"0.2 s",type:"fade"}]}
+    return comp;
   });
 
-  // ★ 채널A 방식: composition 안에 audio + transcript_source
-  const compEls=[
-    ...imgEls,
-    {name:"VO",type:"audio",source:ttsSpeech,provider:prov},
-    {type:"text",transcript_source:"VO",transcript_maximum_length:8,transcript_split:"word",
-      y:"85%",width:"90%",x_alignment:"50%",y_alignment:"50%",
-      fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.5 vmin",
-      font_family:"Noto Sans KR",font_weight:"900",font_size:"8 vmin",
-      background_color:"rgba(0,0,0,0.7)",background_x_padding:"25%",background_y_padding:"20%",background_border_radius:"10%"}
-  ];
-
   return JSON.stringify({output_format:"mp4",width:1080,height:1920,fill_color:"#000000",elements:[
+    ...scenes,
     {type:"text",track:2,text:hookL1||"",y:"9%",width:"95%",x_alignment:"50%",y_alignment:"50%",
       fill_color:"#FFFFFF",stroke_color:"#000000",stroke_width:"1.2 vmin",
-      font_family:"Noto Sans KR",font_weight:"900",font_size:"7 vmin"},
+      font_family:"Noto Sans KR",font_weight:"900",font_size:"7 vmin",duration:null},
     {type:"text",track:3,text:hookL2||"",y:"14%",width:"95%",x_alignment:"50%",y_alignment:"50%",
       fill_color:"#FFD700",stroke_color:"#000000",stroke_width:"1.2 vmin",
-      font_family:"Noto Sans KR",font_weight:"900",font_size:"7 vmin"},
-    {type:"composition",track:4,y:"55%",height:"75%",clip:true,elements:compEls}
+      font_family:"Noto Sans KR",font_weight:"900",font_size:"7 vmin",duration:null}
   ]});
 }
 
@@ -1496,8 +1552,9 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     const bgm=moodBgms[Math.floor(Math.random()*moodBgms.length)];
     let json;
     if(isC){
-      // ★ v11.11.1: 채널A 방식 — Whisper/Drive 불필요, Creatomate 직접 TTS+자막
-      json=buildJSON_C(imgUrls,scriptData.tts||scriptData.tts1||"",scriptData.hook_line1||"",scriptData.hook_line2||"",VID_C);
+      // ★ v11.11.1: 4구간 composition — tts1~tts4 배열로 전달
+      const ttsArr=[scriptData.tts1||"",scriptData.tts2||"",scriptData.tts3||"",scriptData.tts4||""];
+      json=buildJSON_C(imgUrls,ttsArr,scriptData.hook_line1||"",scriptData.hook_line2||"",VID_C);
     }else{
       const ttsArr=isA?[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4]:[scriptData.tts1,scriptData.tts2,scriptData.tts3,scriptData.tts4,scriptData.tts5];
       json=isA
@@ -1510,7 +1567,7 @@ Sound: [환경음 + 효과음 + sharp cartoon gasps between sentences]"
     const hookForSheet=(isA||isC)?(scriptData.hook_line1||scriptData.hook||"")+"\n"+(scriptData.hook_line2||""):scriptData.hook;
     const chLabel=isA?"A":isC?"C":"B";
     // ★ v11.8.0: Status를 C열(index 2)로 이동. "렌더중"으로 초기 저장.
-    const vals=[today.dateStr,chLabel,"렌더중",scriptData.title,scriptData.desc,scriptData.hashtags,scriptData.tags,hookForSheet,scriptData.mood,tmpl,cs(isC?(scriptData.tts||scriptData.tts1||""):scriptData.tts1),cs(isC?"":scriptData.tts2),cs(isC?"":scriptData.tts3),cs(isC?"":scriptData.tts4),imgUrls[0]||"",imgUrls[1]||"",imgUrls[2]||"",imgUrls[3]||"",isC?"":bgm,isA?"":(isC?"":(vidUrls||[]).join(",")),json,"","","",charsStr,(isA||isC)?"":cs(scriptData.tts5),(isA||isC)?"":imgUrls[4]||""];
+    const vals=[today.dateStr,chLabel,"렌더중",scriptData.title,scriptData.desc,scriptData.hashtags,scriptData.tags,hookForSheet,scriptData.mood,tmpl,cs(scriptData.tts1),cs(isC?"":scriptData.tts2),cs(isC?"":scriptData.tts3),cs(isC?"":scriptData.tts4),imgUrls[0]||"",imgUrls[1]||"",imgUrls[2]||"",imgUrls[3]||"",isC?"":bgm,isA?"":(isC?"":(vidUrls||[]).join(",")),json,"","","",charsStr,(isA||isC)?"":cs(scriptData.tts5),(isA||isC)?"":imgUrls[4]||""];
     const r=await callProxy(cfg.proxyUrl,{action:"writeSheet",sheetId:cfg.sheetId,values:vals});
     if(!r.success) throw new Error(r.error||"Sheets 전송 실패");
     const sheetRow=r.row; // appendRow가 반환한 행 번호
@@ -2050,8 +2107,15 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     if(inputData&&(inputData.tts1||inputData.tts)){
       try{
         let data={...inputData};
-        // ★ v11.9.6: 채널C는 tts 단일 필드 → tts1로 통합
-        if(isC&&data.tts&&!data.tts1){data.tts1=data.tts}
+        // ★ v11.11.1: 채널C tts 단일 필드 → tts1~tts4 자동 분배
+        if(isC&&data.tts&&!data.tts1){
+          // tts 단일 필드를 문장 단위로 4구간 분배
+          const sentences=data.tts.split(/(?<=[.?!음임함됨])\s*/);
+          const perScene=Math.ceil(sentences.length/SCENE_COUNT_C);
+          for(let si=0;si<SCENE_COUNT_C;si++){
+            data["tts"+(si+1)]=sentences.slice(si*perScene,(si+1)*perScene).join(" ")||"";
+          }
+        }
         // ★ v11.10.0: 채널C images 배열 파싱 → imageSpecs에 저장
         if(isC&&Array.isArray(data.images)&&data.images.length>0){
           setImageSpecs(data.images);
@@ -2060,7 +2124,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         }
         const hasImg=isC?false:!!(data.img1&&data.img1.length>10);
         const hasVid=isB&&!!(data.vid1&&data.vid1.length>10);
-        const sceneCount=isA?4:isC?1:SCENE_COUNT_B;
+        const sceneCount=isA?4:isC?SCENE_COUNT_C:SCENE_COUNT_B;
         const imgCount=isA?12:isC?IMG_COUNT_C:SCENE_COUNT_B;
         // ★ v11.5.5: 채널A는 Storybook 수동 업로드, 채널C는 img URL 직접 포함
         if(!hasImg){
@@ -2229,7 +2293,7 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     if(!tts){showToast("TTS 텍스트 없음");return}
     if(!cfg.elevenLabsKey){showToast("ElevenLabs API 키 필요 — 설정에서 입력");return}
     // ★ v11.10.7: toSpeechKorean 적용 (숫자→한글 + 단위 변환)
-    const ttsSpeech=toSpeechKorean(tts);
+    const ttsSpeech=toSpeechKoreanC(tts);
 
     try{
       // ── Step 1: ElevenLabs 직접 TTS 생성 ──
