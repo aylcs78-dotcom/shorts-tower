@@ -2157,35 +2157,49 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     const imgUrls=[...images];
     const alts={...serperAlts};
     const failures=[];
+
+    // ★ v11.12.2: Serper 병렬 + NB2 순차 분리 (속도 개선)
+    // 1단계: Serper 검색 — 전부 병렬 (독립적 API 호출)
+    const serperTasks=[];
     for(let i=0;i<count;i++){
-      if(imgUrls[i]){console.log("⏭️ IMG"+(i+1)+" 이미 완료, 건너뜀");continue}
-      const spec=imageSpecs[i];
-      setAutoPhase("이미지 "+(i+1)+"/"+count+" "+(spec.type==="serper"?"검색":"생성")+"...");
-      try{
-        if(spec.type==="serper"){
-          // ★ v11.10.7: gl 파라미터 전달 (세계 장면 gl:"us"+영어, 한국 장면 gl:"kr")
-          const r=await callProxy(cfg.proxyUrl,{action:"searchImages",keyword:spec.keyword,num:15,gl:spec.gl||"kr"});
-          if(r.success&&r.images&&r.images.length>0){
-            // 세로 이미지 우선 정렬
-            const sorted=[...r.images].sort((a,b)=>{
-              const aV=a.height>a.width?1:0;
-              const bV=b.height>b.width?1:0;
-              return bV-aV;
-            });
-            imgUrls[i]=sorted[0].url;
-            alts[i]=sorted.slice(1,6).map(img=>img.url);
-          }else{throw new Error("검색 결과 없음: "+spec.keyword)}
+      if(imgUrls[i]||imageSpecs[i].type!=="serper") continue;
+      serperTasks.push({idx:i,spec:imageSpecs[i]});
+    }
+    if(serperTasks.length>0){
+      setAutoPhase("이미지 검색 "+serperTasks.length+"장 (병렬)...");
+      const serperResults=await Promise.allSettled(serperTasks.map(task=>
+        callProxy(cfg.proxyUrl,{action:"searchImages",keyword:task.spec.keyword,num:15,gl:task.spec.gl||"kr"})
+      ));
+      serperResults.forEach((result,j)=>{
+        const i=serperTasks[j].idx;
+        if(result.status==="fulfilled"&&result.value.success&&result.value.images&&result.value.images.length>0){
+          const sorted=[...result.value.images].sort((a,b)=>(b.height>b.width?1:0)-(a.height>a.width?1:0));
+          imgUrls[i]=sorted[0].url;
+          alts[i]=sorted.slice(1,6).map(img=>img.url);
         }else{
-          imgUrls[i]=await _generateImageNB2(spec.prompt,"9:16");
-          alts[i]=[];
+          failures.push(i+1);
+          console.log("❌ IMG"+(i+1)+" Serper 실패:"+(result.reason||"검색 결과 없음"));
+          imgUrls[i]=null;
         }
+      });
+      setImages([...imgUrls]);setSerperAlts({...alts});
+    }
+
+    // 2단계: NB2 생성 — 순차 (fal.ai 동시요청 병목 방지)
+    for(let i=0;i<count;i++){
+      if(imgUrls[i]||imageSpecs[i].type!=="nb2") continue;
+      setAutoPhase("이미지 "+(i+1)+"/"+count+" AI 생성...");
+      try{
+        imgUrls[i]=await _generateImageNB2(imageSpecs[i].prompt,"9:16");
+        alts[i]=[];
         setImages([...imgUrls]);setSerperAlts({...alts});
       }catch(e){
         failures.push(i+1);
-        console.log("❌ IMG"+(i+1)+" 실패: "+e.message);
+        console.log("❌ IMG"+(i+1)+" NB2 실패: "+e.message);
         imgUrls[i]=null;setImages([...imgUrls]);
       }
     }
+
     if(failures.length>0){setAutoPhase("에러");setAutoError("이미지 "+failures.join(",")+" 실패 — 클릭하여 개별 재시도");return}
     // ★ v11.10.5: 이미지 URL 접근 검증 (Creatomate 렌더 실패 방지)
     setAutoPhase("이미지 검증 중...");
@@ -2294,11 +2308,36 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
   };
 
   // ★ v11.8.0: 전송 + Creatomate 렌더링 + 미리보기
+  // ★ v11.12.2: 렌더링 전 이미지 URL 사전 검증 (크레딧 낭비 방지)
+  const _checkImageUrls=async(imgUrls)=>{
+    return Promise.all(imgUrls.map((url,i)=>{
+      if(!url)return Promise.resolve(null);
+      return new Promise(resolve=>{
+        const img=new Image();
+        const timer=setTimeout(()=>{img.src="";resolve({idx:i,reason:"timeout"})},5000);
+        img.onload=()=>{clearTimeout(timer);resolve(null)};
+        img.onerror=()=>{clearTimeout(timer);resolve({idx:i,reason:"load failed"})};
+        img.src=url;
+      });
+    })).then(r=>r.filter(x=>x!==null));
+  };
   const runSend=async()=>{
     if(!script)return;
     // ★ v11.11.3: 채널B만 자막 확정 체크 (채널C는 Creatomate transcript_source 자동)
     if(isB&&subtitles.length>0&&subtitles.flat().length>0&&!subConfirmed){showToast("자막을 먼저 확정해주세요");return}
-    setAutoPhase("전송");setAutoError("");setRenderUrl("");
+    setAutoPhase("이미지 검증...");setAutoError("");setRenderUrl("");setInvalidImgs([]);
+    // ★ v11.12.2: 렌더링 전 이미지 접근 가능 여부 사전 체크
+    try{
+      const invalidResults=await _checkImageUrls(images.filter(u=>u));
+      if(invalidResults.length>0){
+        const failedIdxs=invalidResults.map(f=>f.idx);
+        setInvalidImgs(failedIdxs);
+        setAutoPhase("에러");
+        setAutoError("⚠️ 이미지 "+failedIdxs.map(i=>"#"+(i+1)).join(", ")+" 접근 불가 — 교체 후 재시도\n(렌더링 차단 → 크레딧 소모 없음)");
+        return;
+      }
+    }catch(ce){console.log("이미지 사전검증 스킵:",ce.message)}
+    setAutoPhase("전송");
     try{
       const result=await _sendToSheets(script,images,videoUrls);
       setSent(true);setStep(4);
@@ -2311,7 +2350,27 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
         showToast("✅ 전송 완료!");
       }
     }
-    catch(e){setAutoPhase("에러");setAutoError("전송 실패: "+e.message)}
+    catch(e){
+      setAutoPhase("에러");
+      // ★ v11.12.2: 사전검증 통과했지만 렌더링 중 실패한 경우 (폴백)
+      const errMsg=e.message||"";
+      const urlMatch=errMsg.match(/https?:\/\/[^\s)]+/g);
+      if(urlMatch&&images.length>0){
+        const failedIdxs=[];
+        urlMatch.forEach(errUrl=>{
+          const cleanErr=errUrl.replace(/[()]/g,"").trim();
+          images.forEach((img,idx)=>{
+            if(img&&cleanErr.includes(img.substring(0,60))){failedIdxs.push(idx)}
+          });
+        });
+        if(failedIdxs.length>0){
+          setInvalidImgs(prev=>[...new Set([...prev,...failedIdxs])]);
+          setAutoError("전송 실패: "+errMsg+"\n⚠️ 실패 이미지: "+failedIdxs.map(i=>"#"+(i+1)).join(", ")+" — 클릭하여 교체 후 재시도");
+          return;
+        }
+      }
+      setAutoError("전송 실패: "+errMsg);
+    }
   };
 
   // ★ v11.10.0: 개별 이미지 재생성 — 채널C는 클릭으로 교체 패널 열기
