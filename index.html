@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#08080c">
-<title>Shorts 관제탑 v11.12.1</title>
+<title>Shorts 관제탑 v11.12.2</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -750,7 +750,7 @@ function App(){
       {toast&&<div className="toast">{toast}</div>}
       <div className="hdr">
         <div className="hdr-row">
-          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.12.1</span></div></div>
+          <div><div className="hdr-logo">Shorts Control Tower</div><div className="hdr-title">관제탑 <span style={{color:"#444",fontWeight:400,fontSize:12}}>v11.12.2</span></div></div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {isDesktop&&<button className="desk-cfg-toggle" onClick={()=>setShowCfg(true)}>설정</button>}
             <div><div className="hdr-date">{today.dateStr}</div><div className="hdr-day" style={{color:"#4ade80"}}>{today.dowKr}요일 {(today.hasBSlot||cfg.testMode)?"B+C":"C only"}{cfg.testMode?" 🧪":""}</div></div>
@@ -2064,13 +2064,15 @@ ${failedItems.map(f=>"- item"+f.idx+": "+f.reason).join("\n")}
     if(inputData&&(inputData.tts1||inputData.tts)){
       try{
         let data={...inputData};
-        // ★ v11.11.1: 채널C tts 단일 필드 → tts1~tts4 자동 분배
+        // ★ v11.12.1: 채널C tts 단일 필드 → tts1~tts4 자동 분배 (소수점 보존)
+        // 숫자.숫자(소수점)를 임시 토큰으로 보호 → split → 복원
         if(isC&&data.tts&&!data.tts1){
-          // tts 단일 필드를 문장 단위로 4구간 분배
-          const sentences=data.tts.split(/(?<=[.?!음임함됨])\s*/);
-          const perScene=Math.ceil(sentences.length/SCENE_COUNT_C);
+          const protectedTts=data.tts.replace(/(\d)\.(\d)/g,"$1__DOT__$2");
+          const sentences=protectedTts.split(/(?<=[.?!음임함됨])\s*/).filter(s=>s.length>1);
+          const restored=sentences.map(s=>s.replace(/__DOT__/g,".").trim());
+          const perScene=Math.ceil(restored.length/SCENE_COUNT_C);
           for(let si=0;si<SCENE_COUNT_C;si++){
-            data["tts"+(si+1)]=sentences.slice(si*perScene,(si+1)*perScene).join(" ")||"";
+            data["tts"+(si+1)]=restored.slice(si*perScene,(si+1)*perScene).join(" ")||"";
           }
         }
         // ★ v11.10.0: 채널C images 배열 파싱 → imageSpecs에 저장
